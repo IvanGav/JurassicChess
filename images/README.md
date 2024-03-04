@@ -1,0 +1,20 @@
+Actually, don't.
+board:
+    https://assets-themes.chess.com/image/9rdwe/200.png
+bb:
+    https://assets-themes.chess.com/image/ejgfv/150/bb.png
+bk:
+    https://assets-themes.chess.com/image/ejgfv/150/bk.png
+bn:
+    https://assets-themes.chess.com/image/ejgfv/150/bn.png
+bp:
+    https://assets-themes.chess.com/image/ejgfv/150/bp.png
+bq:
+    https://assets-themes.chess.com/image/ejgfv/150/bq.png
+br:
+    https://assets-themes.chess.com/image/ejgfv/150/br.png
+wb:
+    https://assets-themes.chess.com/image/ejgfv/150/wb.png
+wk:
+    https://assets-themes.chess.com/image/ejgfv/150/wk.png
+...

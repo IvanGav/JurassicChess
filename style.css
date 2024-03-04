@@ -1,0 +1,39 @@
+body {
+	background-color: powderblue;
+}
+h1 {
+	color: blue;
+}
+p {
+	color: red;
+}
+button.cool {
+	color: purple;
+	border: 2px solid magenta;
+}
+#board_div {
+	display: grid;
+	max-width: 600px;
+	max-height: 600px;
+}
+#board {
+	grid-row: 1;
+	grid-column: 1;
+	/* display: grid; */
+	max-width: 600px;
+	max-height: 600px;
+}
+.piece {
+	grid-row: 1;
+	grid-column: 1;
+	position: relative;
+	max-width: 75px;
+	max-height: 75px;
+}
+.selected {
+	border: 1px solid black;
+}
+/* is applied to the board when it's black's turn */
+.flip {
+	transform: scaleY(-1);
+}
