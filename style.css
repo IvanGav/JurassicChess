@@ -1,12 +1,6 @@
 body {
 	background-color: powderblue;
 }
-h1 {
-	color: blue;
-}
-p {
-	color: red;
-}
 button.cool {
 	color: purple;
 	border: 2px solid magenta;
@@ -33,7 +27,3 @@ button.cool {
 .selected {
 	border: 1px solid black;
 }
-/* is applied to the board when it's black's turn */
-/* .flip {
-	transform: rotate(180); 
-} */

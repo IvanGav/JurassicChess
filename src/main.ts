@@ -186,7 +186,9 @@ function pieceClicked(piece: ChessPiece) {
 			//can move to (piece.x,piece.y) -> can capture
 			removePiece(piece);
 			movePiece(selected, piece.x, piece.y);
-			updatePiecePosition(selected);
+			nextTurn();
+			// updatePiecePosition(selected);
+			updateBoard(); // because it may turn
 		}
 		deselect();
 	}
@@ -199,7 +201,9 @@ function boardClicked(x: number, y: number) {
 	if(attack(selected, x, y)) {
 		//can move to (x,y) and it's empty
 		movePiece(selected, x, y);
-		updatePiecePosition(selected);
+		nextTurn();
+		// updatePiecePosition(selected);
+		updateBoard(); // because it may turn
 	}
 	deselect();
 }

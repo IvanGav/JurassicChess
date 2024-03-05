@@ -21,10 +21,21 @@ enum Color {
 	White = 1,
 }
 
+//Attack squares detection options
+const A_EXCLUDE_EMPTY = 1; //don't add empty attacked cells (useful when detecting checks or pawn captures)
+const A_EXCLUDE_CAPTURES = 2; //don't add attacked cells with enemy pieces (useful when detecting pawn movement)
+const A_VERTICAL_ONLY = 4; //only do vertical attacks; only works with allStraight(...) (limit calculations for pawns)
+
 //board[0][0] = a1; board[7][0] = a8; board[0][7] = h1; board[7][7] = h8
 var board: (ChessPiece|null)[][] = [];
 var selected: (ChessPiece|null) = null;
 var turn: Color = Color.White;
+var winner: (Color|null) = null;
+var brutality: boolean = false; //is set to true whenever a king is captured
+
+/*
+    init functions
+*/
 
 //reset the game position
 function initBoard() {
@@ -87,6 +98,10 @@ function initBoard() {
 	}
 }
 
+/*
+    game progression functions
+*/
+
 //remove a given piece
 function capturePiece(piece: ChessPiece) {
 	board[piece.y][piece.x] = null;
@@ -146,6 +161,18 @@ function attack(piece: ChessPiece, x: number, y: number): boolean {
 	}
 	return false;
 }
+
+//pass the board to the next player
+function nextTurn() {
+    if(turn == Color.White)
+        turn = Color.Black;
+    else
+        turn = Color.White;
+}
+
+/*
+    move legality helper functions
+*/
 
 //return number of squares that a 'piece' has to travel in a straight line to reach (x,y); if can't be reached, return -1
 function distStraight(piece: ChessPiece, x: number, y: number): number {
@@ -221,14 +248,14 @@ function distStraight(piece: ChessPiece, x: number, y: number): number {
 
 //return number of squares that a 'piece' has to travel in a diagonal line to reach (x,y); if can't be reached, return -1
 function distDiagonal(piece: ChessPiece, x: number, y: number): number {
-    let dx = piece.x-x;
-    let dy = piece.y-y;
+    let dx = piece.x-x; //positive if attempt to go left (negative x)
+    let dy = piece.y-y; //positive if attempt to go up (negative y) 
     if(Math.abs(dx) != Math.abs(dy)) return -1;
     if(dx > 0) {
         if(dy > 0) {
             //(x,y) is to the top left of piece
             for(let i = 1; i < dx; i++) {
-                if(board[piece.x-i][piece.y-i] != null)
+                if(board[piece.y-i][piece.x-i] != null)
                     return -1;
             }
             //still check the landing square for availability
@@ -242,7 +269,7 @@ function distDiagonal(piece: ChessPiece, x: number, y: number): number {
         } else {
             //(x,y) is to the bottom left of piece
             for(let i = 1; i < dx; i++) {
-                if(board[piece.x-i][piece.y+i] != null)
+                if(board[piece.y+i][piece.x-i] != null)
                     return -1;
             }
             //still check the landing square for availability
@@ -258,7 +285,7 @@ function distDiagonal(piece: ChessPiece, x: number, y: number): number {
         if(dy > 0) {
             //(x,y) is to the top right of piece
             for(let i = 1; i < -dx; i++) {
-                if(board[piece.x+i][piece.y-i] != null)
+                if(board[piece.y-i][piece.x+i] != null)
                     return -1;
             }
             //still check the landing square for availability
@@ -272,7 +299,7 @@ function distDiagonal(piece: ChessPiece, x: number, y: number): number {
         } else {
             //(x,y) is to the bottom right of piece
             for(let i = 1; i < -dx; i++) {
-                if(board[piece.x+i][piece.y+i] != null)
+                if(board[piece.y+i][piece.x+i] != null)
                     return -1;
             }
             //still check the landing square for availability
@@ -315,7 +342,159 @@ function canKnightMove(piece: ChessPiece, x: number, y: number): boolean {
     return false;
 }
 
-//return if this move is legal in terms of mate and en passant (it's higher than check in priority)
+//return a list of all possible straight moves; for options, look for 'A_${name}'
+function allStraight(piece: ChessPiece, options: number = 0): number[][] {
+    let pos: number[][] = [];
+    let x = -1, y = -1;
+    if((options & A_VERTICAL_ONLY) == 0) {
+        //left
+        for(x = piece.x-1; x >= 0 && board[piece.y][x] == null; x--)
+            if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
+        if(board[piece.y][x]?.color != piece.color)
+            if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
+        //right
+        for(x = piece.x+1; x < 8 && board[piece.y][x] == null; x++)
+            if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
+        if(board[piece.y][x]?.color != piece.color)
+            if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
+    }
+    //up
+    for(y = piece.y-1; y >= 0 && board[y][piece.x] == null; y--)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([piece.x, y]);
+    if(board[y][piece.x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([piece.x, y]);
+    //down
+    for(y = piece.y+1; y < 8 && board[y][piece.x] == null; y++)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([piece.x, y]);
+    if(board[y][piece.x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([piece.x, y]);
+    return pos;
+}
+
+//return a list of all possible diagonal moves; for options, look for 'A_${name}'
+function allDiagonal(piece: ChessPiece, options: number = 0): number[][] {
+    let pos: number[][] = [];
+    let x = -1, y = -1;
+    //top left
+    for(x = piece.x-1, y = piece.y-1; x >= 0 && y >= 0 && board[y][x] == null; x--, y--)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, y]);
+    if(board[y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, y]);
+    //top right
+    for(x = piece.x+1, y = piece.y-1; x < 8 && y >= 0 && board[y][x] == null; x++, y--)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, y]);
+    if(board[y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, y]);
+    //bottom left
+    for(x = piece.x-1, y = piece.y+1; x >= 0 && y < 8 && board[y][x] == null; x--, y++)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, y]);
+    if(board[y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, y]);
+    //bottom right
+    for(x = piece.x+1, y = piece.y+1; x < 8 && y < 8 && board[y][x] == null; x++, y++)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, y]);
+    if(board[y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, y]);
+    return pos;
+}
+
+//return a list of all possible knight moves; for options, look for 'A_${name}'
+function allKnight(piece: ChessPiece, options: number = 0): number[][] {
+    let pos: number[][] = [];
+    //left
+    if(piece.x > 1) {
+        //can move 2 squares left
+        if(piece.y > 0) {
+            //can move <<^
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x-2, piece.y-1]);
+        }
+        if(piece.y < 7) {
+            //can move <<v
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x-2, piece.y+1]);
+        }
+    }
+    if(piece.x > 0) {
+        //can move 1 square left
+        if(piece.y > 1) {
+            //can move <^^
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x-1, piece.y-2]);
+        }
+        if(piece.y < 6) {
+            //can move <vv
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x-1, piece.y+2]);
+        }
+    }
+    //right
+    if(piece.x < 6) {
+        //can move 2 squares right
+        if(piece.y > 0) {
+            //can move >>^
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x+2, piece.y-1]);
+        }
+        if(piece.y < 7) {
+            //can move >>v
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x+2, piece.y+1]);
+        }
+    } else if(piece.x < 7) {
+        //can move 1 square right
+        if(piece.y > 1) {
+            //can move >^^
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x+1, piece.y-2]);
+        }
+        if(piece.y < 6) {
+            //can move >vv
+            if(!(
+                board[piece.y-1][piece.x-2]?.color == piece.color ||
+                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+            ))
+                pos.push([piece.x+1, piece.y+2]);
+        }
+    }
+    return pos;
+}
+
+//return if this move is legal in terms of check, mate and en passant (it's higher than check in priority)
 function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
     return true;
+}
+
+//return true if a king 'king' is in check
+function kingInCheck(king: ChessPiece) {
+
 }
