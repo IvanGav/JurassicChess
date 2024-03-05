@@ -5,11 +5,11 @@ const SELECTED_CLASS = "selected";
 const CELL_SIZE = 75;
 const BOARD_SIZE = 600;
 
-const board_div = document.getElementById(BOARD_DIV_ID);
+const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
 var board_img: HTMLElement;
 
 //of view_direction is not null, it overwrites the 'turn' view
-var view_direction: Color = null;
+var view_direction: (Color|null) = null;
 
 /*
 	board initialization functions
@@ -24,19 +24,19 @@ function initGame() {
 	for(let y = 0; y < 8; y++)
 		for(let x = 0; x < 8; x++)
 			if(board[y][x] != null)
-				addPiece(board[y][x]);
+				addPiece(board[y][x]!);
 }
 
 //put a board into BOARD_DIV_ID div
 function placeBoard() {
 	console.log("Placing the board...");
 	board_div.replaceChildren(createBoard());
-	board_img = document.getElementById(BOARD_ID);
+	board_img = document.getElementById(BOARD_ID)!;
 }
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, null, null);
+	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
 	image.addEventListener("click", getClickPosition, false);
 	return image;
 }
@@ -45,7 +45,11 @@ function createBoard(): HTMLElement {
 function getClickPosition(this: HTMLElement, ev: MouseEvent) {
 	var x = Math.floor(ev.offsetX/CELL_SIZE);
 	var y = Math.floor(ev.offsetY/CELL_SIZE);
-	y = 7 - y; //because of 'flip' magic i assume, it just works
+    if(getViewDirection() == Color.White) {
+        y = 7 - y;
+    } else {
+        x = 7 - x;
+    }
 	boardClicked(x, y);
 }
 
@@ -58,12 +62,12 @@ function addPiece(piece: ChessPiece) {
 }
 
 //get an img div with given arguments
-function getImg(src: string, ifLoadFails: string = "image", id: string = null, classList: string[] = null, onClick: () => void = null): HTMLElement {
+function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = null, classList: string[] = [], onClick: (null|(() => void)) = null): HTMLElement {
 	let image = document.createElement("img");
 	image.src = src; //i hate it, but i can just ignore the null 'src', it'll work just fine, ugh, my Java|Kotlin|C++|C brain hurts
 	image.alt = ifLoadFails;
 	if(id != null) image.id = id; //i'm not even sure if this is nessesary CHECK!!!
-	if(classList != null)
+	if(classList.length > 0)
 		for(let i = 0; i < classList.length; i++)
 			image.classList.add(classList[i]);
 	if(onClick != null)
@@ -119,17 +123,19 @@ function getPieceImage(piece: Piece, color: Color): string {
 
 //update the position of the html piece attached to this 'piece'
 function updatePiecePosition(piece: ChessPiece) {
-	piece.htmlPiece!.style.left = piece.x*CELL_SIZE + "px";
-	if(getViewDirection() == Color.White)
+	if(getViewDirection() == Color.White) {
+	    piece.htmlPiece!.style.left = piece.x*CELL_SIZE + "px";
 		piece.htmlPiece!.style.top = (BOARD_SIZE - (piece.y + 1)*CELL_SIZE) + "px";
-	else
+    } else {
+	    piece.htmlPiece!.style.left = (BOARD_SIZE - (piece.x + 1)*CELL_SIZE) + "px";
 		piece.htmlPiece!.style.top = piece.y*CELL_SIZE + "px";
+    }
 }
 
 //deselect the currently selected (if any) piece (both html and variable)
 function deselect() {
 	if(selected != null) {
-		selected.htmlPiece.classList.remove("selected");
+		selected.htmlPiece!.classList.remove("selected");
 	}
 	selected = null;
 }
@@ -137,20 +143,21 @@ function deselect() {
 //select a piece (both html and variable) (deselect if anything is selected)
 function select(piece: ChessPiece) {
 	deselect();
-	piece.htmlPiece.classList.add("selected");
+	piece.htmlPiece!.classList.add("selected");
 	selected = piece;
 }
 
 //will completely ignore captured pieces; fully update the state of the board
 function updateBoard() {
-	if(getViewDirection() == Color.White)
-		board_img.classList.remove("flip");
-	else
-		board_img.classList.add("flip");
+    //it doesn't even need to be rotated i'm stupid XD
+	// if(getViewDirection() == Color.White)
+	// 	board_img.classList.remove("flip");
+	// else
+	// 	board_img.classList.add("flip");
 	for(let y = 0; y < 8; y++) {
 		for(let x = 0; x < 8; x++) {
 			if(board[y][x] != null) {
-				updatePiecePosition(board[y][x]);
+				updatePiecePosition(board[y][x]!);
 			}
 		}
 	}
@@ -158,7 +165,7 @@ function updateBoard() {
 
 //remove an associated html and a board piece 'piece'
 function removePiece(piece: ChessPiece) {
-	board_div.removeChild(piece.htmlPiece);
+	board_div.removeChild(piece.htmlPiece!);
 	capturePiece(piece);
 }
 

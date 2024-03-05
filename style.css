@@ -34,6 +34,6 @@ button.cool {
 	border: 1px solid black;
 }
 /* is applied to the board when it's black's turn */
-.flip {
-	transform: scaleY(-1);
-}
+/* .flip {
+	transform: rotate(180); 
+} */
