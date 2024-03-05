@@ -21,7 +21,7 @@ enum Color {
 	White = 1,
 }
 
-//Attack squares detection options
+//Attack squares detection options; combine options with | or +
 const A_EXCLUDE_EMPTY = 1; //don't add empty attacked cells (useful when detecting checks or pawn captures)
 const A_EXCLUDE_CAPTURES = 2; //don't add attacked cells with enemy pieces (useful when detecting pawn movement)
 const A_VERTICAL_ONLY = 4; //only do vertical attacks; only works with allStraight(...) (limit calculations for pawns)
@@ -30,6 +30,10 @@ const A_VERTICAL_ONLY = 4; //only do vertical attacks; only works with allStraig
 var board: (ChessPiece|null)[][] = [];
 var selected: (ChessPiece|null) = null;
 var turn: Color = Color.White;
+
+var wk: (ChessPiece|null);
+var bk: (ChessPiece|null);
+
 var winner: (Color|null) = null;
 var brutality: boolean = false; //is set to true whenever a king is captured
 
@@ -85,6 +89,10 @@ function initBoard() {
 	board[6][5] = {type: Piece.Pawn, color: Color.Black, x: 5, y: 6};
 	board[6][6] = {type: Piece.Pawn, color: Color.Black, x: 6, y: 6};
 	board[6][7] = {type: Piece.Pawn, color: Color.Black, x: 7, y: 6};
+
+    //save kings to wk, bk
+    wk = board[0][4];
+    bk = board[7][4];
 
 	//init uid for every piece
 	let count = 0;
@@ -496,5 +504,9 @@ function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
 
 //return true if a king 'king' is in check
 function kingInCheck(king: ChessPiece) {
-
+    let straight = allStraight(king, A_EXCLUDE_EMPTY);
+    console.log(straight);
+    console.log(straight.find((value: number[], index: number, obj: number[][]) => {
+        return (value[0] == king.x+1 && value[1] == king.y);
+    }));
 }

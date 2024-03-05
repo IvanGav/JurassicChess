@@ -11,6 +11,10 @@ var board_img: HTMLElement;
 //of view_direction is not null, it overwrites the 'turn' view
 var view_direction: (Color|null) = null;
 
+function test() {
+	kingInCheck(wk!);
+}
+
 /*
 	board initialization functions
 */
