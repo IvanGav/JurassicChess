@@ -24,15 +24,16 @@ enum Color {
 //Attack squares detection options; combine options with | or +
 const A_EXCLUDE_EMPTY = 1; //don't add empty attacked cells (useful when detecting checks or pawn captures)
 const A_EXCLUDE_CAPTURES = 2; //don't add attacked cells with enemy pieces (useful when detecting pawn movement)
-const A_VERTICAL_ONLY = 4; //only do vertical attacks; only works with allStraight(...) (limit calculations for pawns)
 
 //board[0][0] = a1; board[7][0] = a8; board[0][7] = h1; board[7][7] = h8
 var board: (ChessPiece|null)[][] = [];
 var selected: (ChessPiece|null) = null;
 var turn: Color = Color.White;
+var promotionPiece: Piece = Piece.Queen;
+var promotionCallback: (((piece:ChessPiece)=>void)|null) = null; //set up before the game begins (optional)
 
-var wk: (ChessPiece|null);
-var bk: (ChessPiece|null);
+var wk: (ChessPiece|null) = null;
+var bk: (ChessPiece|null) = null;
 
 var winner: (Color|null) = null;
 var brutality: boolean = false; //is set to true whenever a king is captured
@@ -121,6 +122,11 @@ function movePiece(piece: ChessPiece, x: number, y: number) {
 	board[piece.y][piece.x] = null;
 	piece.x = x;
 	piece.y = y;
+    //promote
+    if(piece.type == Piece.Pawn && (piece.y == 0 || piece.y == 7)) {
+        piece.type = promotionPiece;
+        if(promotionCallback != null) promotionCallback(piece);
+    }
 }
 
 //true means that the position (x,y) can be attacked (moved to, and perhaps capture) by a 'piece'; false means 'piece' can't move to that position
@@ -354,18 +360,16 @@ function canKnightMove(piece: ChessPiece, x: number, y: number): boolean {
 function allStraight(piece: ChessPiece, options: number = 0): number[][] {
     let pos: number[][] = [];
     let x = -1, y = -1;
-    if((options & A_VERTICAL_ONLY) == 0) {
-        //left
-        for(x = piece.x-1; x >= 0 && board[piece.y][x] == null; x--)
-            if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
-        if(board[piece.y][x]?.color != piece.color)
-            if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
-        //right
-        for(x = piece.x+1; x < 8 && board[piece.y][x] == null; x++)
-            if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
-        if(board[piece.y][x]?.color != piece.color)
-            if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
-    }
+    //left
+    for(x = piece.x-1; x >= 0 && board[piece.y][x] == null; x--)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
+    if(board[piece.y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
+    //right
+    for(x = piece.x+1; x < 8 && board[piece.y][x] == null; x++)
+        if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, piece.y]);
+    if(board[piece.y][x]?.color != piece.color)
+        if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, piece.y]);
     //up
     for(y = piece.y-1; y >= 0 && board[y][piece.x] == null; y--)
         if((options & A_EXCLUDE_EMPTY) == 0) pos.push([piece.x, y]);
@@ -497,16 +501,113 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
     return pos;
 }
 
+//return a list of all possible pawn moves; for options, look for 'A_${name}'
+function allPawn(piece: ChessPiece, options: number = 0): number[][] {
+    let pos: number[][] = [];
+    let startRank = (piece.color == Color.White) ? 1 : 6;
+    let moveDirection = (piece.color == Color.White) ? 1 : -1;
+    if(piece.y+moveDirection < 0 || piece.y+moveDirection > 7) return [];
+    //move
+    if(board[piece.y+moveDirection][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) {
+        //right in front is not obstructed
+        pos.push([piece.x, piece.y+moveDirection]);
+        if(piece.y == startRank && board[piece.y+moveDirection*2][piece.x] == null) {
+            pos.push([piece.x, piece.y+moveDirection*2]);
+        }
+    }
+    //capture
+    if((options & A_EXCLUDE_CAPTURES) == 0) {
+        if(board[piece.y][piece.x+1] != null && board[piece.y][piece.x+1]!.color != piece.color)
+            pos.push([piece.x+1, piece.y]);
+        if(board[piece.y][piece.x-1] != null && board[piece.y][piece.x-1]!.color != piece.color)
+            pos.push([piece.x-1, piece.y]);
+    }
+    return pos;
+}
+
+//return a list of all possible king moves; for options, look for 'A_${name}'
+function allKing(piece: ChessPiece, options: number = 0): number[][] {
+    let pos: number[][] = [];
+    if((board[piece.y+1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x, piece.y+1]);
+    if((board[piece.y+1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x+1, piece.y+1]);
+    if((board[piece.y][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x+1, piece.y]);
+    if((board[piece.y-1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x+1, piece.y-1]);
+    if((board[piece.y-1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x, piece.y-1]);
+    if((board[piece.y-1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x-1, piece.y-1]);
+    if((board[piece.y][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x-1, piece.y]);
+    if((board[piece.y+1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+        pos.push([piece.x-1, piece.y+1]);
+    return pos;
+}
+
 //return if this move is legal in terms of check, mate and en passant (it's higher than check in priority)
+//illegal moves (from most to least important):
+//  there is an en passant available
+//  king is in check and this move doesn't defend/move king out of check
+//  this move would put king in check
+//note: en passant is required when available, even if it puts king in check
+//  king can also move next to the opponent king
+//  in both situations, if king is captured, it's called brutality
 function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
     return true;
 }
 
-//return true if a king 'king' is in check
+//return true if a 'king' is in check
 function kingInCheck(king: ChessPiece) {
     let straight = allStraight(king, A_EXCLUDE_EMPTY);
-    console.log(straight);
-    console.log(straight.find((value: number[], index: number, obj: number[][]) => {
-        return (value[0] == king.x+1 && value[1] == king.y);
-    }));
+    console.log(`straight: ${straight}`);
+    straight.find((value: number[], index: number, obj: number[][]) => {
+        let type = board[value[1]][value[0]]?.type;
+        if(type == Piece.Rook || type == Piece.Queen) return true;
+    });
+    let diagonal = allDiagonal(king, A_EXCLUDE_EMPTY);
+    console.log(`diagonal: ${diagonal}`);
+    diagonal.find((value: number[], index: number, obj: number[][]) => {
+        let type = board[value[1]][value[0]]?.type;
+        if(type == Piece.Bishop || type == Piece.Queen) return true;
+    });
+    let knight = allKnight(king, A_EXCLUDE_EMPTY);
+    console.log(`knight: ${knight}`);
+    knight.find((value: number[], index: number, obj: number[][]) => {
+        let type = board[value[1]][value[0]]?.type;
+        if(type == Piece.Knight) return true;
+    });
 }
+
+
+/*
+
+Design of a chess board and movement, huh.
+
+Requirements: efficiently look if a move is legal. Efficiently give hints to where a piece can move.
+
+Legal means:
+    If en passant exists, prohibit any other moves
+    If a king is in check, only blocking and king moves are allowed
+    If a piece is pinned to the king, prohibit moves that would put king in check
+    Check if a piece is capable to move like that
+
+Don't worry about en passant for now...
+
+Checking if a piece can move like that can be done with 'all' moves functions, it's as efficient as it gets UNLESS;
+
+for checks and pins, we can use 2 separate aboards (attack) - for black and white. 
+    In each aboard, a square is attacked (with a counter) or not (0 counter).
+    When a piece moves, 
+
+*/

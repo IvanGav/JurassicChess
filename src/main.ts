@@ -29,6 +29,9 @@ function initGame() {
 		for(let x = 0; x < 8; x++)
 			if(board[y][x] != null)
 				addPiece(board[y][x]!);
+    promotionCallback = (piece: ChessPiece) => {
+        piece.htmlPiece = getImg(getPieceImage(piece.type, piece.color), "chess_piece", piece.uid, ["piece"], () => pieceClicked(piece));
+    }
 }
 
 //put a board into BOARD_DIV_ID div
