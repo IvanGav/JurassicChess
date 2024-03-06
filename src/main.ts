@@ -1,5 +1,6 @@
 const BOARD_DIV_ID = "board_div";
 const BOARD_ID = "board";
+const MESSAGE_ID = "message";
 const PIECE_CLASS = "piece";
 const SELECTED_CLASS = "selected";
 const CELL_SIZE = 75;
@@ -33,7 +34,9 @@ function initGame() {
 			if(board[y][x] != null)
 				addPiece(board[y][x]!);
     promotionCallback = (piece: ChessPiece) => {
+		board_div.removeChild(piece.htmlPiece!);
         piece.htmlPiece = getImg(getPieceImage(piece.type, piece.color), "chess_piece", piece.uid, ["piece"], () => pieceClicked(piece));
+		board_div.appendChild(piece.htmlPiece!);
     }
 }
 
@@ -187,7 +190,7 @@ function pieceClicked(piece: ChessPiece) {
 	} else {
 		//clicking on opponent piece
 		if(selected == null) return;
-		if(attack(selected, piece.x, piece.y)) {
+		if(attack(selected, piece.x, piece.y) && moveLegal(selected, piece.x, piece.y)) {
 			//can move to (piece.x,piece.y) -> can capture
 			removePiece(piece);
 			movePiece(selected, piece.x, piece.y);
@@ -203,7 +206,7 @@ function pieceClicked(piece: ChessPiece) {
 function boardClicked(x: number, y: number) {
 	// console.log(`clicked on board at x = ${x}, y = ${y}, direction = ${getViewDirection()}`);
 	if(selected == null) return;
-	if(attack(selected, x, y)) {
+	if(attack(selected, x, y) && moveLegal(selected, x, y)) {
 		//can move to (x,y) and it's empty
 		movePiece(selected, x, y);
 		nextTurn();
@@ -211,6 +214,12 @@ function boardClicked(x: number, y: number) {
 		updateBoard(); // because it may turn
 	}
 	deselect();
+}
+
+//currently playing side is resigning
+function resign() {
+	winner = (turn == Color.White ? Color.Black : Color.White);
+	document.getElementById(MESSAGE_ID)!.innerText = winner == Color.White ? "White won" : "Black won";
 }
 
 /*

@@ -1,19 +1,16 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<!-- <script src="index.js"></script> -->
 		<link rel="stylesheet" href="style.css">
-		<!-- <script src="index.js">initGame();</script> -->
 	</head>
 	<body>
-		<h2>Demo JavaScript in Head</h2>
+		<h2>Chess</h2>
 
-		<p id="demo">A Paragraph</p>
+		<p id="message">A game is active</p>
 		<button class="cool" type="button" onclick="initGame()">board</button>
 		<button type="button" onclick="toggleViewDirection()">flip</button>
 		<button type="button" onclick="resetViewDirection()">reset flip</button>
-		<button type="button" onclick="test()">test</button>
-		<!-- <button type="button" onclick="button3Clicked()">Eh?</button> -->
+		<button type="button" onclick="resign()">resign</button>
 		<div id="board_div"></div>
 
 		<script src="game.js"></script>
