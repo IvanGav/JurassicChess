@@ -7,7 +7,7 @@ Generated Javascript (js) files will be put into the home directory, together wi
 To delete generated js files, you can use `./clr.bash`. 
 Requires "tsc" to be installed for compilation. It can be installed with `npm install typescript --save-dev`. 
 npm can be installed from [node.js official website](https://nodejs.org/en/download). 
-tsconfig.json can be used for [ts configuration](https://www.typescriptlang.org/tsconfig) (such as strictNullChecks).
+"tsconfig.json" can be used for [ts configuration](https://www.typescriptlang.org/tsconfig) (such as strictNullChecks).
 
 For now, "index.html" loads js scripts in the head without any extra import/export. It's probably going to stay this way, because oh god modules for web pages are a pain to figure out for the first time.
 
