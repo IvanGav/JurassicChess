@@ -32,8 +32,10 @@ var turn: Color = Color.White;
 var promotionPiece: Piece = Piece.Queen;
 var promotionCallback: (((piece:ChessPiece)=>void)|null) = null; //set up before the game begins (optional)
 
-var wk: (ChessPiece|null) = null;
-var bk: (ChessPiece|null) = null;
+var wking: (ChessPiece|null) = null;
+var wpieces: ChessPiece[] = []; //stores all white pieces excluding king
+var bking: (ChessPiece|null) = null;
+var bpieces: ChessPiece[] = []; //stores all black pieces excluding king
 
 var winner: (Color|null) = null;
 var brutality: boolean = false; //is set to true whenever a king is captured
@@ -48,6 +50,10 @@ function initBoard() {
 	turn = Color.White;
 	selected = null;
 	board = [];
+    wking = null;
+    wpieces = [];
+    bking = null;
+    bpieces = [];
 	for(let y = 0; y < 8; y++) {
 		board.push([]);
 		for(let x = 0; x < 8; x++) {
@@ -63,6 +69,15 @@ function initBoard() {
 	board[0][5] = {type: Piece.Bishop, color: Color.White, x: 5, y: 0};
 	board[0][6] = {type: Piece.Knight, color: Color.White, x: 6, y: 0};
 	board[0][7] = {type: Piece.Rook, color: Color.White, x: 7, y: 0};
+    
+    wpieces.push(board[0][0]);
+    wpieces.push(board[0][1]);
+    wpieces.push(board[0][2]);
+    wpieces.push(board[0][3]);
+    wking = board[0][4];
+    wpieces.push(board[0][5]);
+    wpieces.push(board[0][6]);
+    wpieces.push(board[0][7]);
 
 	board[1][0] = {type: Piece.Pawn, color: Color.White, x: 0, y: 1};
 	board[1][1] = {type: Piece.Pawn, color: Color.White, x: 1, y: 1};
@@ -72,6 +87,15 @@ function initBoard() {
 	board[1][5] = {type: Piece.Pawn, color: Color.White, x: 5, y: 1};
 	board[1][6] = {type: Piece.Pawn, color: Color.White, x: 6, y: 1};
 	board[1][7] = {type: Piece.Pawn, color: Color.White, x: 7, y: 1};
+
+    wpieces.push(board[1][0]);
+    wpieces.push(board[1][1]);
+    wpieces.push(board[1][2]);
+    wpieces.push(board[1][3]);
+    wpieces.push(board[1][4]);
+    wpieces.push(board[1][5]);
+    wpieces.push(board[1][6]);
+    wpieces.push(board[1][7]);
 	
 	board[7][0] = {type: Piece.Rook, color: Color.Black, x: 0, y: 7};
 	board[7][1] = {type: Piece.Knight, color: Color.Black, x: 1, y: 7};
@@ -81,6 +105,15 @@ function initBoard() {
 	board[7][5] = {type: Piece.Bishop, color: Color.Black, x: 5, y: 7};
 	board[7][6] = {type: Piece.Knight, color: Color.Black, x: 6, y: 7};
 	board[7][7] = {type: Piece.Rook, color: Color.Black, x: 7, y: 7};
+    
+    bpieces.push(board[7][0]);
+    bpieces.push(board[7][1]);
+    bpieces.push(board[7][2]);
+    bpieces.push(board[7][3]);
+    bking = board[7][4];
+    bpieces.push(board[7][5]);
+    bpieces.push(board[7][6]);
+    bpieces.push(board[7][7]);
 
 	board[6][0] = {type: Piece.Pawn, color: Color.Black, x: 0, y: 6};
 	board[6][1] = {type: Piece.Pawn, color: Color.Black, x: 1, y: 6};
@@ -90,10 +123,15 @@ function initBoard() {
 	board[6][5] = {type: Piece.Pawn, color: Color.Black, x: 5, y: 6};
 	board[6][6] = {type: Piece.Pawn, color: Color.Black, x: 6, y: 6};
 	board[6][7] = {type: Piece.Pawn, color: Color.Black, x: 7, y: 6};
-
-    //save kings to wk, bk
-    wk = board[0][4];
-    bk = board[7][4];
+    
+    bpieces.push(board[6][0]);
+    bpieces.push(board[6][1]);
+    bpieces.push(board[6][2]);
+    bpieces.push(board[6][3]);
+    bpieces.push(board[6][4]);
+    bpieces.push(board[6][5]);
+    bpieces.push(board[6][6]);
+    bpieces.push(board[6][7]);
 
 	//init uid for every piece
 	let count = 0;
@@ -571,22 +609,33 @@ function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
 function kingInCheck(king: ChessPiece) {
     let straight = allStraight(king, A_EXCLUDE_EMPTY);
     console.log(`straight: ${straight}`);
-    straight.find((value: number[], index: number, obj: number[][]) => {
+    if(straight.findIndex((value: number[], index: number, obj: number[][]) => {
         let type = board[value[1]][value[0]]?.type;
         if(type == Piece.Rook || type == Piece.Queen) return true;
-    });
+    }) != -1) 
+        return true;
     let diagonal = allDiagonal(king, A_EXCLUDE_EMPTY);
     console.log(`diagonal: ${diagonal}`);
-    diagonal.find((value: number[], index: number, obj: number[][]) => {
+    if(diagonal.findIndex((value: number[], index: number, obj: number[][]) => {
         let type = board[value[1]][value[0]]?.type;
         if(type == Piece.Bishop || type == Piece.Queen) return true;
-    });
+    }) != -1)
+        return true;
     let knight = allKnight(king, A_EXCLUDE_EMPTY);
     console.log(`knight: ${knight}`);
-    knight.find((value: number[], index: number, obj: number[][]) => {
+    if(knight.findIndex((value: number[], index: number, obj: number[][]) => {
         let type = board[value[1]][value[0]]?.type;
         if(type == Piece.Knight) return true;
-    });
+    }) != -1)
+        return true;
+    let pawn = allPawn(king, A_EXCLUDE_EMPTY);
+    console.log(`pawn: ${pawn}`);
+    if(pawn.findIndex((value: number[], index: number, obj: number[][]) => {
+        let type = board[value[1]][value[0]]?.type;
+        if(type == Piece.Pawn) return true;
+    }) != -1)
+        return true;
+    return false;
 }
 
 
@@ -605,9 +654,5 @@ Legal means:
 Don't worry about en passant for now...
 
 Checking if a piece can move like that can be done with 'all' moves functions, it's as efficient as it gets UNLESS;
-
-for checks and pins, we can use 2 separate aboards (attack) - for black and white. 
-    In each aboard, a square is attacked (with a counter) or not (0 counter).
-    When a piece moves, 
 
 */

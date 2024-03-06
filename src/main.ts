@@ -12,7 +12,10 @@ var board_img: HTMLElement;
 var view_direction: (Color|null) = null;
 
 function test() {
-	kingInCheck(wk!);
+    console.log("white king:");
+	console.log(kingInCheck(wking!));
+    console.log("black king:");
+	console.log(kingInCheck(bking!));
 }
 
 /*
@@ -156,11 +159,6 @@ function select(piece: ChessPiece) {
 
 //will completely ignore captured pieces; fully update the state of the board
 function updateBoard() {
-    //it doesn't even need to be rotated i'm stupid XD
-	// if(getViewDirection() == Color.White)
-	// 	board_img.classList.remove("flip");
-	// else
-	// 	board_img.classList.add("flip");
 	for(let y = 0; y < 8; y++) {
 		for(let x = 0; x < 8; x++) {
 			if(board[y][x] != null) {
