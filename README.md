@@ -10,6 +10,7 @@ npm can be installed from [node.js official website](https://nodejs.org/en/downl
 
 For now, "index.html" loads js scripts in the head without any extra import/export. It's probably going to stay this way, because oh god modules for web pages are a pain to figure out for the first time.
 
-More details will be added later, when it's remotely playable.
+So, it's normal chess, without checkmate: you have to resign. It's probably going to stay this way, because detecting checkmate is kinda annoying 
+(too much computation for every turn (probably not true, but I don't want it to be even more awful than it already is)). Also no castling yet.
 
 The plan is to make it playable on the same computer, then on a server (not even sure if it's going to happen).
