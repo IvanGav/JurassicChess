@@ -618,7 +618,8 @@ function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
 }
 
 //return true if a 'king' is in check
-function kingInCheck(king: ChessPiece) {
+function kingInCheck(color: Color) {
+    let king = color == Color.White ? wking! : bking!;
     let straight = allStraight(king, A_EXCLUDE_EMPTY);
     if(straight.findIndex((value: number[], index: number, obj: number[][]) => {
         let type = board[value[1]][value[0]]?.type;
@@ -646,9 +647,66 @@ function kingInCheck(king: ChessPiece) {
     return false;
 }
 
-//return true if it's a checkmate for a given color; DOESN'T WORK
+//return true if it's a checkmate for a given color
 function isCheckmate(color: Color): boolean {
-    return false;
+}
+
+//return true if it's a stalemate for a given color
+function isStalemate(color: Color): boolean {
+    if(kingInCheck)
+}
+
+//return true if there are no legal moves; false if there are legal moves
+function noLegalMoves(color: Color): boolean {
+    let king = color == Color.White ? wking! : bking!;
+    let pieces = color == Color.White ? wpieces! : bpieces!;
+    {
+        let all = allKing(king);
+        for(let j = 0; j < all.length; j++)
+            if(moveLegal(king, all[j][0], all[j][1]))
+                return false;
+    }
+    for(let i = 0; i < pieces.length; i++) {
+        switch(pieces[i].type) {
+            case Piece.King: break;
+            case Piece.Bishop: {
+                let all = allDiagonal(pieces[i]);
+                for(let j = 0; j < all.length; j++)
+                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                        return false;
+                break;
+            };
+            case Piece.Knight: {
+                let all = allKnight(pieces[i]);
+                for(let j = 0; j < all.length; j++)
+                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                        return false;
+                break;
+            };
+            case Piece.Rook: {
+                let all = allStraight(pieces[i]);
+                for(let j = 0; j < all.length; j++)
+                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                        return false;
+                break;
+            };
+            case Piece.Queen: {
+                let all = allStraight(pieces[i]).concat(allDiagonal(pieces[i]));
+                for(let j = 0; j < all.length; j++)
+                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                        return false;
+                break;
+            };
+            case Piece.Pawn: {
+                let all = allPawn(pieces[i]);
+                for(let j = 0; j < all.length; j++)
+                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                        return false;
+                break;
+            };
+        }
+    }
+    return true;
 }
 
 var _whatIfCaptured: (ChessPiece|null) = null;
@@ -677,22 +735,3 @@ function whatIfRevert() {
     _whatIfAt = null;
     _whatIfFrom = null;
 }
-
-
-/*
-
-Design of a chess board and movement, huh.
-
-Requirements: efficiently look if a move is legal. Efficiently give hints to where a piece can move.
-
-Legal means:
-    If en passant exists, prohibit any other moves
-    If a king is in check, only blocking and king moves are allowed
-    If a piece is pinned to the king, prohibit moves that would put king in check
-    Check if a piece is capable to move like that
-
-Don't worry about en passant for now...
-
-Checking if a piece can move like that can be done with 'all' moves functions, it's as efficient as it gets UNLESS;
-
-*/
