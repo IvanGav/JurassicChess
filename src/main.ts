@@ -18,10 +18,8 @@ var view_direction: (Color|null) = null;
 
 //init game
 function initGame() {
-	console.log("Initializing the game...");
 	initBoard();
 	placeBoard();
-	console.log("Adding pieces...");
 	for(let y = 0; y < 8; y++)
 		for(let x = 0; x < 8; x++)
 			if(board[y][x] != null)
@@ -35,7 +33,6 @@ function initGame() {
 
 //put a board into BOARD_DIV_ID div
 function placeBoard() {
-	console.log("Placing the board...");
 	board_div.replaceChildren(createBoard());
 	board_img = document.getElementById(BOARD_ID)!;
 }
@@ -172,6 +169,7 @@ function removePiece(piece: ChessPiece) {
 
 //this function gets called for every clicked piece
 function pieceClicked(piece: ChessPiece) {
+	console.log("_________________________________________________________________________");
 	// console.log(`clicked on a piece at x = ${piece.x}, y = ${piece.y}, direction = ${getViewDirection()}`);
 	if(piece.color == turn) {
 		//clicking on your piece
@@ -198,6 +196,7 @@ function pieceClicked(piece: ChessPiece) {
 
 //this function gets called for every square on board that's clicked
 function boardClicked(x: number, y: number) {
+	console.log("_________________________________________________________________________");
 	// console.log(`clicked on board at x = ${x}, y = ${y}, direction = ${getViewDirection()}`);
 	if(selected == null) return;
 	if(attack(selected, x, y) && moveLegal(selected, x, y)) {
@@ -212,7 +211,6 @@ function boardClicked(x: number, y: number) {
 }
 
 function checkWinner() {
-	console.log("checking if the game has ended");
 	if(updateGameState()) {
 		//if the game has ended;
 		console.log("the game has ended");

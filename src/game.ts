@@ -55,7 +55,6 @@ var brutality: boolean = false; //is set to true whenever a king is captured
 
 //reset the game position
 function initBoard() {
-	console.log("Resetting the board...")
 	turn = Color.White;
 	selected = null;
 	board = [];
@@ -69,7 +68,6 @@ function initBoard() {
 			board[y].push(null);
 		}
 	}
-	console.log(board);
 	board[0][0] = {type: Piece.Rook, color: Color.White, x: 0, y: 0};
 	board[0][1] = {type: Piece.Knight, color: Color.White, x: 1, y: 0};
 	board[0][2] = {type: Piece.Bishop, color: Color.White, x: 2, y: 0};
@@ -450,6 +448,8 @@ function allStraight(piece: ChessPiece, options: number = 0): number[][] {
         if((options & A_EXCLUDE_EMPTY) == 0) pos.push([piece.x, y]);
     if(y < 8 && board[y][piece.x]?.color != piece.color)
         if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([piece.x, y]);
+    console.log(`---straight for a piece on (x,y) = (${piece.x},${piece.y}):`);
+    console.log(pos);
     return pos;
 }
 
@@ -477,12 +477,19 @@ function allDiagonal(piece: ChessPiece, options: number = 0): number[][] {
         if((options & A_EXCLUDE_EMPTY) == 0) pos.push([x, y]);
     if(x < 8 && y < 8 && board[y][x]?.color != piece.color)
         if((options & A_EXCLUDE_CAPTURES) == 0) pos.push([x, y]);
+    console.log(`---diagonal for a piece on (x,y) = (${piece.x},${piece.y}):`);
+    console.log(pos);
     return pos;
 }
 
 //return a list of all possible knight moves; for options, look for 'A_${name}'
 function allKnight(piece: ChessPiece, options: number = 0): number[][] {
     let pos: number[][] = [];
+
+    //(x,y) = (5,6)
+    //x = 5
+    //y = 6
+
     //left
     if(piece.x > 1) {
         //can move 2 squares left
@@ -490,8 +497,8 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move <<^
             if(!(
                 board[piece.y-1][piece.x-2]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x-2] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y-1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y-1][piece.x-2]?.color != piece.color)
             ))
                 pos.push([piece.x-2, piece.y-1]);
         }
@@ -499,8 +506,8 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move <<v
             if(!(
                 board[piece.y+1][piece.x-2]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y+1][piece.x-2] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y+1][piece.x-2]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y+1][piece.x-2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y+1][piece.x-2]?.color != piece.color)
             ))
                 pos.push([piece.x-2, piece.y+1]);
         }
@@ -511,8 +518,8 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move <^^
             if(!(
                 board[piece.y-2][piece.x-1]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-2][piece.x-1] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-2][piece.x-1]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y-2][piece.x-1] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y-2][piece.x-1]?.color != piece.color)
             ))
                 pos.push([piece.x-1, piece.y-2]);
         }
@@ -520,8 +527,8 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move <vv
             if(!(
                 board[piece.y+2][piece.x-1]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y+2][piece.x-1] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y+2][piece.x-1]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y+2][piece.x-1] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y+2][piece.x-1]?.color != piece.color)
             ))
                 pos.push([piece.x-1, piece.y+2]);
         }
@@ -533,8 +540,8 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move >>^
             if(!(
                 board[piece.y-1][piece.x+2]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-1][piece.x+2] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-1][piece.x+2]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y-1][piece.x+2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y-1][piece.x+2]?.color != piece.color)
             ))
                 pos.push([piece.x+2, piece.y-1]);
         }
@@ -542,19 +549,20 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move >>v
             if(!(
                 board[piece.y+1][piece.x+2]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y+1][piece.x+2] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y+1][piece.x+2]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y+1][piece.x+2] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y+1][piece.x+2]?.color != piece.color)
             ))
                 pos.push([piece.x+2, piece.y+1]);
         }
-    } else if(piece.x < 7) {
+    }
+    if(piece.x < 7) {
         //can move 1 square right
         if(piece.y > 1) {
             //can move >^^
             if(!(
                 board[piece.y-2][piece.x+1]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y-2][piece.x+1] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y-2][piece.x+1]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y-2][piece.x+1] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y-2][piece.x+1]?.color != piece.color)
             ))
                 pos.push([piece.x+1, piece.y-2]);
         }
@@ -562,12 +570,14 @@ function allKnight(piece: ChessPiece, options: number = 0): number[][] {
             //can move >vv
             if(!(
                 board[piece.y+2][piece.x+1]?.color == piece.color ||
-                ((options & A_EXCLUDE_EMPTY) != 0 && board[piece.y+2][piece.x+1] == null) ||
-                ((options & A_EXCLUDE_CAPTURES) != 0 && board[piece.y+2][piece.x+1]?.color != piece.color)
+                ((options & A_EXCLUDE_EMPTY) == 0 && board[piece.y+2][piece.x+1] == null) ||
+                ((options & A_EXCLUDE_CAPTURES) == 0 && board[piece.y+2][piece.x+1]?.color != piece.color)
             ))
                 pos.push([piece.x+1, piece.y+2]);
         }
     }
+    console.log(`---knight for a piece on (x,y) = (${piece.x},${piece.y}):`);
+    console.log(pos);
     return pos;
 }
 
@@ -592,6 +602,8 @@ function allPawn(piece: ChessPiece, options: number = 0): number[][] {
         if(board[piece.y+moveDirection][piece.x-1] != null && board[piece.y+moveDirection][piece.x-1]!.color != piece.color)
             pos.push([piece.x-1, piece.y+moveDirection]);
     }
+    console.log(`---pawn for a piece on (x,y) = (${piece.x},${piece.y}):`);
+    console.log(pos);
     return pos;
 }
 
@@ -622,6 +634,8 @@ function allKing(piece: ChessPiece, options: number = 0): number[][] {
     if(piece.y < 7 && ((board[piece.y+1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
         (board[piece.y+1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x-1, piece.y+1]);
+    console.log(`---king for a piece on (x,y) = (${piece.x},${piece.y}):`);
+    console.log(pos);
     return pos;
 }
 
@@ -635,21 +649,25 @@ function allKing(piece: ChessPiece, options: number = 0): number[][] {
 //  king can also move next to the opponent king
 //  in both situations, if king is captured, it's called brutality
 function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
-    console.log(`Move legal is being checked for ${piece.color == Color.White ? "White" : "Black"}`);
+	console.log("--call moveLegal");
+    console.log(`Move legal is being checked for ${piece.color == Color.White ? "White" : "Black"} from (x,y) = (${piece.x},${piece.y}) to (x,y) = (${x},${y})`);
     if(board[y][x]?.type == Piece.King) return true;
     whatIf(piece, x, y);
     if(kingInCheck(piece.color)) {
         whatIfRevert();
+        console.log("   illegal");
         return false;
     }
     whatIfRevert();
+    console.log("   legal");
     return true;
 }
 
 //return true if a 'king' is in check
 function kingInCheck(color: Color) {
-    console.log(`${color == Color.White ? "White" : "Black"} king is being checked if it's in check...`);
+	console.log("--call kingInCheck");
     let king = color == Color.White ? wking! : bking!;
+    console.log(`${color == Color.White ? "White" : "Black"} king is being checked if it's in check on (x,y) = (${king.x},${king.y})`);
     let straight = allStraight(king, A_EXCLUDE_EMPTY);
     if(straight.findIndex((value: number[], index: number, obj: number[][]) => {
         let type = board[value[1]][value[0]]?.type;
@@ -681,6 +699,7 @@ function kingInCheck(color: Color) {
 //should be called after each move (after the turn was passed) to determine if someone is checkmated/stalemated
 //true means that game just ended; false means no game state change
 function updateGameState(): boolean {
+	console.log("--call updateGameState");
     //all possible cases:
     //  'turn' is checkmated and has nothing to do
     //  'turn' is stalemated and has no moves
@@ -690,11 +709,11 @@ function updateGameState(): boolean {
         winner = turn == Color.White ? Color.Black : Color.White;
         return true;
     }
-    // console.log(`${turn == Color.White ? "White" : "Black"} king is alive`);
+    console.log(`${turn == Color.White ? "White" : "Black"} king is alive`);
     let noLegalMovesLeft = noLegalMoves(turn);
     let inCheck = kingInCheck(turn);
-    // console.log(`${noLegalMovesLeft ? "No " : "Yes "} legal moves left`);
-    // console.log(`${inCheck ? "Yes " : "Not "} in check`);
+    console.log(`${noLegalMovesLeft ? "No " : "Yes "} legal moves left`);
+    console.log(`${inCheck ? "Yes " : "Not "} in check`);
     if(noLegalMovesLeft && inCheck) {
         gameState = GameState.Checkmate;
         winner = turn == Color.White ? Color.Black : Color.White;
@@ -711,6 +730,7 @@ function updateGameState(): boolean {
 
 //return true if there are no legal moves; false if there are legal moves
 function noLegalMoves(color: Color): boolean {
+	console.log("--call noLegalMoves");
     let king = color == Color.White ? wking! : bking!;
     let pieces = color == Color.White ? wpieces! : bpieces!;
     // console.log(`Checking if there are legal moves for ${color == Color.White ? "White" : "Black"}; king is ${king} and pieces == null is ${pieces == null}`);
@@ -718,7 +738,7 @@ function noLegalMoves(color: Color): boolean {
         let all = allKing(king);
         for(let j = 0; j < all.length; j++)
             if(moveLegal(king, all[j][0], all[j][1])) {
-                console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                 return false;
             }
     }
@@ -729,7 +749,7 @@ function noLegalMoves(color: Color): boolean {
                 let all = allDiagonal(pieces[i]);
                 for(let j = 0; j < all.length; j++)
                     if(moveLegal(pieces[i], all[j][0], all[j][1])) {
-                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                        console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
                     }
                 break;
@@ -738,7 +758,7 @@ function noLegalMoves(color: Color): boolean {
                 let all = allKnight(pieces[i]);
                 for(let j = 0; j < all.length; j++)
                     if(moveLegal(pieces[i], all[j][0], all[j][1])) {
-                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                        console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
                     }
                 break;
@@ -747,7 +767,7 @@ function noLegalMoves(color: Color): boolean {
                 let all = allStraight(pieces[i]);
                 for(let j = 0; j < all.length; j++)
                     if(moveLegal(pieces[i], all[j][0], all[j][1])) {
-                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                        console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
                     }
                 break;
@@ -756,7 +776,7 @@ function noLegalMoves(color: Color): boolean {
                 let all = allStraight(pieces[i]).concat(allDiagonal(pieces[i]));
                 for(let j = 0; j < all.length; j++)
                     if(moveLegal(pieces[i], all[j][0], all[j][1])) {
-                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                        console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
                     }
                 break;
@@ -765,7 +785,7 @@ function noLegalMoves(color: Color): boolean {
                 let all = allPawn(pieces[i]);
                 for(let j = 0; j < all.length; j++)
                     if(moveLegal(pieces[i], all[j][0], all[j][1])) {
-                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
+                        console.log(`   king move is legal to (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
                     }
                 break;
