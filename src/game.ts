@@ -21,6 +21,13 @@ enum Color {
 	White = 1,
 }
 
+enum GameState {
+    None = 0,
+    Going = 1,
+    Checkmate = 2,
+    Stalemate = 3,
+}
+
 //Attack squares detection options; combine options with | or +
 const A_EXCLUDE_EMPTY = 1; //don't add empty attacked cells (useful when detecting checks or pawn captures)
 const A_EXCLUDE_CAPTURES = 2; //don't add attacked cells with enemy pieces (useful when detecting pawn movement)
@@ -38,6 +45,7 @@ var bking: (ChessPiece|null) = null;
 var bpieces: ChessPiece[] = []; //stores all black pieces excluding king
 
 var winner: (Color|null) = null;
+var gameState: GameState = GameState.None;
 var brutality: boolean = false; //is set to true whenever a king is captured
 
 /*
@@ -144,6 +152,8 @@ function initBoard() {
 			}
 		}
 	}
+
+    gameState = GameState.Going;
 }
 
 /*
@@ -603,13 +613,14 @@ function allKing(piece: ChessPiece, options: number = 0): number[][] {
 //  there is an en passant available
 //  king is in check and this move doesn't defend/move king out of check
 //  this move would put king in check
+//  taking opponent's king is always legal
 //note: en passant is required when available, even if it puts king in check
 //  king can also move next to the opponent king
 //  in both situations, if king is captured, it's called brutality
 function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
-    // if(!kingInCheck((piece.color == Color.White) ? wking! : bking!)) return true;
+    if(board[y][x]?.type == Piece.King) return true;
     whatIf(piece, x, y);
-    if(kingInCheck((piece.color == Color.White) ? wking! : bking!)) {
+    if(kingInCheck(piece.color)) {
         whatIfRevert();
         return false;
     }
@@ -647,13 +658,24 @@ function kingInCheck(color: Color) {
     return false;
 }
 
-//return true if it's a checkmate for a given color
-function isCheckmate(color: Color): boolean {
-}
+//should be called after each move (after the turn was passed) to determine if someone is checkmated/stalemated
+//true means that game just ended
+function updateGameState() {
+    //all possible cases:
+    //  'turn' is checkmated and has nothing to do
+    //  'turn' is stalemated and has no moves
+    //  'turn' has no king
+    let anyLegalMoves = noLegalMoves(turn);
+    let inCheck = kingInCheck(turn);
+    if((turn == Color.White ? wking : bking) == null) {
+        return true;
+    }
+    if(anyLegalMoves && inCheck) {
+        gameState = GameState.Checkmate;
+        winner = Color.Black;
+    } else if(noLegalMovesWhite && !inCheckWhite) {
 
-//return true if it's a stalemate for a given color
-function isStalemate(color: Color): boolean {
-    if(kingInCheck)
+    }
 }
 
 //return true if there are no legal moves; false if there are legal moves
