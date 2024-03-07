@@ -26,6 +26,7 @@ enum GameState {
     Going = 1,
     Checkmate = 2,
     Stalemate = 3,
+    Brutality = 4,
 }
 
 //Attack squares detection options; combine options with | or +
@@ -163,6 +164,22 @@ function initBoard() {
 //remove a given piece
 function capturePiece(piece: ChessPiece) {
 	board[piece.y][piece.x] = null;
+    if(piece.type == Piece.King) {
+        if(piece.color == Color.White)
+            wking = null;
+        else
+            bking = null;
+    } else {
+        if(piece.color == Color.White) {
+            wpieces.splice(wpieces.findIndex((value: ChessPiece, index: number, obj: ChessPiece[]) => {
+                return value === piece;
+            }), 1);
+        } else {
+            bpieces.splice(wpieces.findIndex((value: ChessPiece, index: number, obj: ChessPiece[]) => {
+                return value === piece;
+            }), 1);
+        }
+    }
 }
 
 //no move legality checking, just move a given piece to a given position
@@ -581,29 +598,29 @@ function allPawn(piece: ChessPiece, options: number = 0): number[][] {
 //return a list of all possible king moves; for options, look for 'A_${name}'
 function allKing(piece: ChessPiece, options: number = 0): number[][] {
     let pos: number[][] = [];
-    if((board[piece.y+1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y+1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y < 7 && ((board[piece.y+1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x, piece.y+1]);
-    if((board[piece.y+1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y+1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y < 7 && ((board[piece.y+1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x+1, piece.y+1]);
     if((board[piece.y][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
         (board[piece.y][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
         pos.push([piece.x+1, piece.y]);
-    if((board[piece.y-1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y-1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y > 0 && ((board[piece.y-1][piece.x+1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x+1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x+1, piece.y-1]);
-    if((board[piece.y-1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y-1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y > 0 && ((board[piece.y-1][piece.x] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x, piece.y-1]);
-    if((board[piece.y-1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y-1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y > 0 && ((board[piece.y-1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y-1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x-1, piece.y-1]);
     if((board[piece.y][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
         (board[piece.y][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
         pos.push([piece.x-1, piece.y]);
-    if((board[piece.y+1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
-        (board[piece.y+1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0))
+    if(piece.y < 7 && ((board[piece.y+1][piece.x-1] == null && (options & A_EXCLUDE_EMPTY) == 0) || 
+        (board[piece.y+1][piece.x-1]?.color != piece.color && (options & A_EXCLUDE_CAPTURES) == 0)))
         pos.push([piece.x-1, piece.y+1]);
     return pos;
 }
@@ -618,6 +635,7 @@ function allKing(piece: ChessPiece, options: number = 0): number[][] {
 //  king can also move next to the opponent king
 //  in both situations, if king is captured, it's called brutality
 function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
+    console.log(`Move legal is being checked for ${piece.color == Color.White ? "White" : "Black"}`);
     if(board[y][x]?.type == Piece.King) return true;
     whatIf(piece, x, y);
     if(kingInCheck(piece.color)) {
@@ -630,6 +648,7 @@ function moveLegal(piece: ChessPiece, x: number, y: number): boolean {
 
 //return true if a 'king' is in check
 function kingInCheck(color: Color) {
+    console.log(`${color == Color.White ? "White" : "Black"} king is being checked if it's in check...`);
     let king = color == Color.White ? wking! : bking!;
     let straight = allStraight(king, A_EXCLUDE_EMPTY);
     if(straight.findIndex((value: number[], index: number, obj: number[][]) => {
@@ -655,38 +674,53 @@ function kingInCheck(color: Color) {
         if(type == Piece.Pawn) return true;
     }) != -1)
         return true;
+    console.log(`Not in check`);
     return false;
 }
 
 //should be called after each move (after the turn was passed) to determine if someone is checkmated/stalemated
-//true means that game just ended
-function updateGameState() {
+//true means that game just ended; false means no game state change
+function updateGameState(): boolean {
     //all possible cases:
     //  'turn' is checkmated and has nothing to do
     //  'turn' is stalemated and has no moves
     //  'turn' has no king
-    let anyLegalMoves = noLegalMoves(turn);
-    let inCheck = kingInCheck(turn);
     if((turn == Color.White ? wking : bking) == null) {
+        gameState = GameState.Brutality;
+        winner = turn == Color.White ? Color.Black : Color.White;
         return true;
     }
-    if(anyLegalMoves && inCheck) {
+    // console.log(`${turn == Color.White ? "White" : "Black"} king is alive`);
+    let noLegalMovesLeft = noLegalMoves(turn);
+    let inCheck = kingInCheck(turn);
+    // console.log(`${noLegalMovesLeft ? "No " : "Yes "} legal moves left`);
+    // console.log(`${inCheck ? "Yes " : "Not "} in check`);
+    if(noLegalMovesLeft && inCheck) {
         gameState = GameState.Checkmate;
-        winner = Color.Black;
-    } else if(noLegalMovesWhite && !inCheckWhite) {
-
+        winner = turn == Color.White ? Color.Black : Color.White;
+        return true;
     }
+    // console.log(`${turn == Color.White ? "White" : "Black"} king is not checkmated`);
+    if(noLegalMovesLeft) {
+        gameState = GameState.Stalemate;
+        return true;
+    }
+    // console.log(`${turn == Color.White ? "White" : "Black"} king is not stalemated`);
+    return false;
 }
 
 //return true if there are no legal moves; false if there are legal moves
 function noLegalMoves(color: Color): boolean {
     let king = color == Color.White ? wking! : bking!;
     let pieces = color == Color.White ? wpieces! : bpieces!;
+    // console.log(`Checking if there are legal moves for ${color == Color.White ? "White" : "Black"}; king is ${king} and pieces == null is ${pieces == null}`);
     {
         let all = allKing(king);
         for(let j = 0; j < all.length; j++)
-            if(moveLegal(king, all[j][0], all[j][1]))
+            if(moveLegal(king, all[j][0], all[j][1])) {
+                console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                 return false;
+            }
     }
     for(let i = 0; i < pieces.length; i++) {
         switch(pieces[i].type) {
@@ -694,36 +728,46 @@ function noLegalMoves(color: Color): boolean {
             case Piece.Bishop: {
                 let all = allDiagonal(pieces[i]);
                 for(let j = 0; j < all.length; j++)
-                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                    if(moveLegal(pieces[i], all[j][0], all[j][1])) {
+                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
+                    }
                 break;
             };
             case Piece.Knight: {
                 let all = allKnight(pieces[i]);
                 for(let j = 0; j < all.length; j++)
-                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                    if(moveLegal(pieces[i], all[j][0], all[j][1])) {
+                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
+                    }
                 break;
             };
             case Piece.Rook: {
                 let all = allStraight(pieces[i]);
                 for(let j = 0; j < all.length; j++)
-                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                    if(moveLegal(pieces[i], all[j][0], all[j][1])) {
+                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
+                    }
                 break;
             };
             case Piece.Queen: {
                 let all = allStraight(pieces[i]).concat(allDiagonal(pieces[i]));
                 for(let j = 0; j < all.length; j++)
-                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                    if(moveLegal(pieces[i], all[j][0], all[j][1])) {
+                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
+                    }
                 break;
             };
             case Piece.Pawn: {
                 let all = allPawn(pieces[i]);
                 for(let j = 0; j < all.length; j++)
-                    if(moveLegal(pieces[i], all[j][0], all[j][1]))
+                    if(moveLegal(pieces[i], all[j][0], all[j][1])) {
+                        console.log(`king move is legal at (x,y) = (${all[j][0]},${all[j][1]})`);
                         return false;
+                    }
                 break;
             };
         }

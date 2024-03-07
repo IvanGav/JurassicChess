@@ -12,13 +12,6 @@ var board_img: HTMLElement;
 //of view_direction is not null, it overwrites the 'turn' view
 var view_direction: (Color|null) = null;
 
-function test() {
-    console.log("white king:");
-	console.log(kingInCheck(wking!));
-    console.log("black king:");
-	console.log(kingInCheck(bking!));
-}
-
 /*
 	board initialization functions
 */
@@ -197,6 +190,7 @@ function pieceClicked(piece: ChessPiece) {
 			nextTurn();
 			// updatePiecePosition(selected);
 			updateBoard(); // because it may turn
+			checkWinner();
 		}
 		deselect();
 	}
@@ -212,8 +206,24 @@ function boardClicked(x: number, y: number) {
 		nextTurn();
 		// updatePiecePosition(selected);
 		updateBoard(); // because it may turn
+		checkWinner();
 	}
 	deselect();
+}
+
+function checkWinner() {
+	console.log("checking if the game has ended");
+	if(updateGameState()) {
+		//if the game has ended;
+		console.log("the game has ended");
+		if(gameState == GameState.Brutality) {
+			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
+		} else if(gameState == GameState.Checkmate) {
+			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has won" : "Black has won");
+		} else if(gameState == GameState.Stalemate) {
+			document.getElementById(MESSAGE_ID)!.innerText = "Stalemate";
+		}
+	}
 }
 
 //currently playing side is resigning

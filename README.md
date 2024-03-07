@@ -9,6 +9,21 @@ Requires "tsc" to be installed for compilation. It can be installed with `npm in
 npm can be installed from [node.js official website](https://nodejs.org/en/download). 
 "tsconfig.json" can be used for [ts configuration](https://www.typescriptlang.org/tsconfig) (such as strictNullChecks).
 
+This is a "tsconfig.json" file that works for me: 
+```json
+{
+	"compilerOptions": {
+		"outDir": "./dist/",
+		"noImplicitAny": true,
+		"module": "es6",
+		"target": "es5",
+		"jsx": "react",
+		"allowJs": false,
+		"moduleResolution": "node",
+		"strict": true
+	}
+}```
+
 For now, "index.html" loads js scripts in the head without any extra import/export. It's probably going to stay this way, because oh god modules for web pages are a pain to figure out for the first time.
 
 So, it's normal chess, without checkmate: you have to resign. It's probably going to stay this way, because detecting checkmate is kinda annoying 
