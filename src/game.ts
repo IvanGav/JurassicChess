@@ -33,6 +33,10 @@ enum GameState {
 const A_EXCLUDE_EMPTY = 1; //don't add empty attacked cells (useful when detecting checks or pawn captures)
 const A_EXCLUDE_CAPTURES = 2; //don't add attacked cells with enemy pieces (useful when detecting pawn movement)
 
+/*
+    game state
+*/
+
 //board[0][0] = a1; board[7][0] = a8; board[0][7] = h1; board[7][7] = h8
 var board: (ChessPiece|null)[][] = [];
 var selected: (ChessPiece|null) = null;
