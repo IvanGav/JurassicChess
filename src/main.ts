@@ -11,6 +11,8 @@ var board_img: HTMLElement;
 
 //of view_direction is not null, it overwrites the 'turn' view
 var view_direction: (Color|null) = null;
+var htmlPieces: HTMLElement[] = [];
+var moves: Move[] = [];
 
 /*
 	board initialization functions
@@ -20,15 +22,15 @@ var view_direction: (Color|null) = null;
 function initGame() {
 	initBoard();
 	placeBoard();
-	for(let y = 0; y < 8; y++)
-		for(let x = 0; x < 8; x++)
-			if(board[y][x] != null)
-				addPiece(board[y][x]!);
-    promotionCallback = (piece: ChessPiece) => {
-		board_div.removeChild(piece.htmlPiece!);
-        piece.htmlPiece = getImg(getPieceImage(piece.type, piece.color), "chess_piece", piece.uid, ["piece"], () => pieceClicked(piece));
-		board_div.appendChild(piece.htmlPiece!);
-    }
+	for(let i = 0; i < pieces.length; i++)
+		addPiece(i);
+	moves = allMoves();
+	setCallbacks(/* on promotion: */ (piece: number) => {
+		removePiece(piece);
+		addPiece(piece);
+    }, /* on capture: */ (piece: number) => {
+		removePiece(piece);
+    });
 }
 
 //put a board into BOARD_DIV_ID div
@@ -57,9 +59,10 @@ function getClickPosition(this: HTMLElement, ev: MouseEvent) {
 }
 
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
-function addPiece(piece: ChessPiece) {
-	let htmlPiece = getImg(getPieceImage(piece.type, piece.color), "chess_piece", piece.uid, ["piece"], () => pieceClicked(piece));
-	piece.htmlPiece = htmlPiece;
+function addPiece(piece: number) {
+	let p = pieces[piece]!;
+	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
+	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
 	board_div.appendChild(htmlPiece);
 }
@@ -69,7 +72,7 @@ function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = 
 	let image = document.createElement("img");
 	image.src = src; //i hate it, but i can just ignore the null 'src', it'll work just fine, ugh, my Java|Kotlin|C++|C brain hurts
 	image.alt = ifLoadFails;
-	if(id != null) image.id = id; //i'm not even sure if this is nessesary CHECK!!!
+	if(id != null) image.id = id;
 	if(classList.length > 0)
 		for(let i = 0; i < classList.length; i++)
 			image.classList.add(classList[i]);
@@ -125,53 +128,51 @@ function getPieceImage(piece: Piece, color: Color): string {
 */
 
 //update the position of the html piece attached to this 'piece'
-function updatePiecePosition(piece: ChessPiece) {
+function updatePiecePosition(piece: number) {
+	let htmlPiece = htmlPieces[piece];
+	let p = pieces[piece]!;
 	if(getViewDirection() == Color.White) {
-	    piece.htmlPiece!.style.left = piece.x*CELL_SIZE + "px";
-		piece.htmlPiece!.style.top = (BOARD_SIZE - (piece.y + 1)*CELL_SIZE) + "px";
+	    htmlPiece.style.left = p.x*CELL_SIZE + "px";
+		htmlPiece.style.top = (BOARD_SIZE - (p.y + 1)*CELL_SIZE) + "px";
     } else {
-	    piece.htmlPiece!.style.left = (BOARD_SIZE - (piece.x + 1)*CELL_SIZE) + "px";
-		piece.htmlPiece!.style.top = piece.y*CELL_SIZE + "px";
+	    htmlPiece.style.left = (BOARD_SIZE - (p.x + 1)*CELL_SIZE) + "px";
+		htmlPiece.style.top = p.y*CELL_SIZE + "px";
     }
 }
 
 //deselect the currently selected (if any) piece (both html and variable)
 function deselect() {
-	if(selected != null) {
-		selected.htmlPiece!.classList.remove("selected");
+	if(selected != NONE) {
+		htmlPieces[selected].classList.remove("selected");
 	}
-	selected = null;
+	selected = NONE;
 }
 
 //select a piece (both html and variable) (deselect if anything is selected)
-function select(piece: ChessPiece) {
+function select(piece: number) {
 	deselect();
-	piece.htmlPiece!.classList.add("selected");
+	htmlPieces[piece].classList.add("selected");
 	selected = piece;
 }
 
 //will completely ignore captured pieces; fully update the state of the board
 function updateBoard() {
-	for(let y = 0; y < 8; y++) {
-		for(let x = 0; x < 8; x++) {
-			if(board[y][x] != null) {
-				updatePiecePosition(board[y][x]!);
-			}
+	for(let i = 0; i < pieces.length; i++) {
+		if(pieces[i] != null) {
+			updatePiecePosition(i);
 		}
 	}
 }
 
 //remove an associated html and a board piece 'piece'
-function removePiece(piece: ChessPiece) {
-	board_div.removeChild(piece.htmlPiece!);
-	capturePiece(piece);
+function removePiece(piece: number) {
+	board_div.removeChild(htmlPieces[piece]);
 }
 
 //this function gets called for every clicked piece
-function pieceClicked(piece: ChessPiece) {
-	console.log("_________________________________________________________________________");
-	// console.log(`clicked on a piece at x = ${piece.x}, y = ${piece.y}, direction = ${getViewDirection()}`);
-	if(piece.color == turn) {
+function pieceClicked(piece: number) {
+	let p = pieces[piece]!;
+	if(p.color == turn) {
 		//clicking on your piece
 		if(selected == piece) {
 			deselect();
@@ -180,13 +181,14 @@ function pieceClicked(piece: ChessPiece) {
 		}
 	} else {
 		//clicking on opponent piece
-		if(selected == null) return;
-		if(attack(selected, piece.x, piece.y) && moveLegal(selected, piece.x, piece.y)) {
+		if(selected == NONE) return; //ERROR: comparing to null isntead of NONE
+		let s = pieces[selected]!;
+		let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: p.x, y: p.y}});
+		if(move != null) {
 			//can move to (piece.x,piece.y) -> can capture
-			removePiece(piece);
-			movePiece(selected, piece.x, piece.y);
+			makeMove(selected, move.to);
 			nextTurn();
-			// updatePiecePosition(selected);
+			moves = allMoves();
 			updateBoard(); // because it may turn
 			checkWinner();
 		}
@@ -196,14 +198,14 @@ function pieceClicked(piece: ChessPiece) {
 
 //this function gets called for every square on board that's clicked
 function boardClicked(x: number, y: number) {
-	console.log("_________________________________________________________________________");
-	// console.log(`clicked on board at x = ${x}, y = ${y}, direction = ${getViewDirection()}`);
-	if(selected == null) return;
-	if(attack(selected, x, y) && moveLegal(selected, x, y)) {
+	if(selected == NONE) return; //ERROR: comparing to null isntead of NONE
+	let s = pieces[selected]!;
+	let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: x, y: y}});
+	if(move != null) {
 		//can move to (x,y) and it's empty
-		movePiece(selected, x, y);
+		makeMove(selected, move.to);
 		nextTurn();
-		// updatePiecePosition(selected);
+		moves = allMoves();
 		updateBoard(); // because it may turn
 		checkWinner();
 	}
@@ -211,15 +213,16 @@ function boardClicked(x: number, y: number) {
 }
 
 function checkWinner() {
-	if(updateGameState()) {
-		//if the game has ended;
-		console.log("the game has ended");
+	if(updateGameState(moves)) {
+		//if the game has ended
 		if(gameState == GameState.Brutality) {
 			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
 		} else if(gameState == GameState.Checkmate) {
 			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has won" : "Black has won");
 		} else if(gameState == GameState.Stalemate) {
 			document.getElementById(MESSAGE_ID)!.innerText = "Stalemate";
+		} else if(gameState == GameState.InsufficientMaterial) {
+			document.getElementById(MESSAGE_ID)!.innerText = "Draw by insufficient material";
 		}
 	}
 }
@@ -256,5 +259,16 @@ function resetViewDirection() {
 function getViewDirection(): Color {
 	if(view_direction == null)
 		return turn;
-	return view_direction
+	return view_direction;
+}
+
+//check if a move 'move' is available this turn; return the actual move to be taken (may change move.type field) or null if not available
+function moveAvailable(move: Move): (Move|null) {
+	for(let i = 0; i < moves.length; i++) {
+		let test = moves[i];
+		if(test.from.x == move.from.x && test.from.y == move.from.y && test.to.x == move.to.x && test.to.y == move.to.y) { //ERROR: the last condition was testing 'from' and not 'to'
+			return test;
+		}
+	}
+	return null;
 }
