@@ -10,7 +10,7 @@ npm can be installed from [node.js official website](https://nodejs.org/en/downl
 "tsconfig.json" can be used for [ts configuration](https://www.typescriptlang.org/tsconfig) (such as strictNullChecks).
 
 This is a "tsconfig.json" file that works for me: 
-`json
+```json
 {
 	"compilerOptions": {
 		"outDir": "./dist/",
@@ -22,11 +22,11 @@ This is a "tsconfig.json" file that works for me:
 		"moduleResolution": "node",
 		"strict": true
 	}
-}`
+}
+```
 
 For now, "index.html" loads js scripts in the head without any extra import/export. It's probably going to stay this way, because oh god modules for web pages are a pain to figure out for the first time.
 
-So, it's normal chess, without checkmate: you have to resign. It's probably going to stay this way, because detecting checkmate is kinda annoying 
-(too much computation for every turn (probably not true, but I don't want it to be even more awful than it already is)). Also no castling yet.
+So, it's normal chess. Nothing more nothing less. Needs more polishing and testing.
 
 The plan is to make it playable on the same computer, then on a server (not even sure if it's going to happen).
