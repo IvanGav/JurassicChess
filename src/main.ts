@@ -1,13 +1,12 @@
 const BOARD_DIV_ID = "board_div";
 const BOARD_ID = "board";
-const MESSAGE_ID = "message";
+const GAME_STATUS_ID = "game_status";
 const PIECE_CLASS = "piece";
 const SELECTED_CLASS = "selected";
 const CELL_SIZE = 75;
 const BOARD_SIZE = 600;
 
 const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
-var board_img: HTMLElement;
 
 //of view_direction is not null, it overwrites the 'turn' view
 var view_direction: (Color|null) = null;
@@ -36,7 +35,6 @@ function initGame() {
 //put a board into BOARD_DIV_ID div
 function placeBoard() {
 	board_div.replaceChildren(createBoard());
-	board_img = document.getElementById(BOARD_ID)!;
 }
 
 //return a new board image
@@ -216,13 +214,13 @@ function checkWinner() {
 	if(updateGameState(moves)) {
 		//if the game has ended
 		if(gameState == GameState.Brutality) {
-			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
+			document.getElementById(GAME_STATUS_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
 		} else if(gameState == GameState.Checkmate) {
-			document.getElementById(MESSAGE_ID)!.innerText = (winner == Color.White ? "White has won" : "Black has won");
+			document.getElementById(GAME_STATUS_ID)!.innerText = (winner == Color.White ? "White has won" : "Black has won");
 		} else if(gameState == GameState.Stalemate) {
-			document.getElementById(MESSAGE_ID)!.innerText = "Stalemate";
+			document.getElementById(GAME_STATUS_ID)!.innerText = "Stalemate";
 		} else if(gameState == GameState.InsufficientMaterial) {
-			document.getElementById(MESSAGE_ID)!.innerText = "Draw by insufficient material";
+			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by insufficient material";
 		}
 	}
 }
@@ -230,7 +228,7 @@ function checkWinner() {
 //currently playing side is resigning
 function resign() {
 	winner = (turn == Color.White ? Color.Black : Color.White);
-	document.getElementById(MESSAGE_ID)!.innerText = winner == Color.White ? "White won" : "Black won";
+	document.getElementById(GAME_STATUS_ID)!.innerText = winner == Color.White ? "White won" : "Black won";
 }
 
 /*

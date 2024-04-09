@@ -4,14 +4,26 @@
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body>
-		<h2>Chess</h2>
+		<div>
+			<h2 class="center_text" id="title">DinoChess</h2>
+		</div>
+		<div id="game_body">
+			<div id="board_section">
+				<div id="board_div"></div>
+			</div>
 
-		<p id="message">A game is active</p>
-		<button class="cool" type="button" onclick="initGame()">board</button>
-		<button type="button" onclick="toggleViewDirection()">flip</button>
-		<button type="button" onclick="resetViewDirection()">reset flip</button>
-		<button type="button" onclick="resign()">resign</button>
-		<div id="board_div"></div>
+			<div id="side_section">
+				<p id="game_status">A game is active</p>
+				
+				<button class="cool" type="button" onclick="initGame()">Start Game</button>
+				<button type="button" onclick="toggleViewDirection()">Flip</button>
+				<button type="button" onclick="resetViewDirection()">Reset Flip</button>
+				<button type="button" onclick="resign()">Resign</button>
+
+				<hr>
+				<div id="moves">generic moves go here...</div>
+			</div>
+		</div>
 
 		<script src="game.js"></script>
 		<script src="main.js"></script>

@@ -1,5 +1,6 @@
 body {
-	background-color: powderblue;
+	background-color: rgb(71, 71, 71);
+	/* height: 100%; */
 }
 button.cool {
 	color: purple;
@@ -13,9 +14,11 @@ button.cool {
 #board {
 	grid-row: 1;
 	grid-column: 1;
-	/* display: grid; */
 	max-width: 600px;
 	max-height: 600px;
+}
+#title {
+	color: whitesmoke;
 }
 .piece {
 	grid-row: 1;
@@ -26,4 +29,31 @@ button.cool {
 }
 .selected {
 	border: 1px solid black;
+}
+.center_text {
+	text-align: center;
+}
+.row {
+	display: flex;
+	flex-direction: row;
+}
+
+#game_body {
+	display: grid;
+	grid-template-columns: [start] 5vw [board_div_start] 800px [mid] auto [side_div_end] 5vw [end];
+	height: 90vh;
+  	padding: 0;
+}
+#board_section {
+	grid-column: board_div_start/mid;
+	background-color: rgb(100, 100, 100);
+	padding: 100px;
+	border-radius: 3% 0% 0% 3%;
+}
+#side_section {
+	grid-column: mid/side_div_end;
+	max-width: 750px; /* 800 - 25*2 */
+	background-color: rgb(146, 146, 146);
+	padding: 25px;
+	border-radius: 0% 3% 3% 0%;
 }
