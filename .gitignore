@@ -1,3 +1,5 @@
 *.js
+# if i want to host it on github, i need to push actual js files too
 *.json
 node_modules/*
+dist/*
