@@ -58,12 +58,6 @@ const PIECES_PER_PLAYER = 16;
 const KNIGHT_RELATIVE_MOVES: Coord[] = [{x: -2, y: -1},{x: -2, y: 1},{x: -1, y: -2},{x: -1, y: 2},{x: 1, y: -2},{x: 1, y: 2},{x: 2, y: -1},{x: 2, y: 1}]; //offsets!
 const KING_RELATIVE_MOVES: Coord[] = [{x: -1, y: -1},{x: -1, y: 0},{x: -1, y: 1},{x: 0, y: -1},{x: 0, y: 1},{x: 1, y: -1},{x: 1, y: 0},{x: 1, y: 1}]; //offsets!
 
-// const PLAYERS = 7;
-// const DRAW_VOTE_REQUIRED = 5; //5 out of 7 people have to vote for the game to be a draw
-
-const PLAYERS = 2;
-const DRAW_VOTE_REQUIRED = 2;
-
 /*
     game state
 */
@@ -82,7 +76,6 @@ var bking: number = NONE;
 
 var winner: (Color|null) = null;
 var gameState: GameState = GameState.None;
-var draw_count: number = 0;
 
 /*
     init functions
@@ -92,7 +85,7 @@ var draw_count: number = 0;
 function initBoard() {
     gameState = GameState.None;
     winner = null;
-    draw_count = 0;
+    playersDrawAgreed = [];
 
 	turn = Color.White;
 	selected = NONE;
@@ -556,8 +549,8 @@ function kingInCheck(color: Color): boolean {
 }
 
 //should be called at the beginning of every move with input of all possible moves for current player
-function updateGameState(moves: Move[]): boolean {
-    if(draw_count >= DRAW_VOTE_REQUIRED) {
+function updateGameState(moves: Move[], agreedDraw: boolean = false): boolean {
+    if(agreedDraw) {
         winner = null;
         gameState = GameState.AgreedDraw;
         return true;

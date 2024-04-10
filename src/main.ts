@@ -1,10 +1,21 @@
 const BOARD_DIV_ID = "board_div";
 const BOARD_ID = "board";
 const GAME_STATUS_ID = "game_status";
+const TURN_STATUS_ID = "turn_status";
 const PIECE_CLASS = "piece";
 const SELECTED_CLASS = "selected";
-const BOARD_SIZE = 600;
-const CELL_SIZE = BOARD_SIZE/8;
+
+// const PLAYERS = 7;
+// const DRAW_VOTE_REQUIRED = 5; //5 out of 7 people have to vote for the game to be a draw
+
+const PLAYERS = 2;
+const DRAW_VOTE_REQUIRED = 2;
+
+var BOARD_SIZE = 600;
+var CELL_SIZE = BOARD_SIZE/8;
+
+var screenHeight = window.innerHeight;
+var screenWidth = window.innerWidth;
 
 const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
 
@@ -12,7 +23,11 @@ const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
 var viewDirection: (Color|null) = null;
 var htmlPieces: HTMLElement[] = [];
 var moves: Move[] = [];
+
+//player info
+var player: number = 0;
 var timers: number[] = [];
+var playersDrawAgreed: boolean[] = [];
 
 var timeControl: number = 300; //inital time; in seconds
 var timeBonus: number = 3; //added with each turn; in seconds
@@ -34,9 +49,16 @@ function initGame() {
 		removePiece(piece);
     });
 	moves = allMoves();
-	//init timers
-	for(let i = 0; i < PLAYERS; i++)
+	updateTurnStatus();
+	updateGameStatusGameActive();
+	player = 0;
+	//init player variables
+	timers = [];
+	playersDrawAgreed = [];
+	for(let i = 0; i < PLAYERS; i++) {
 		timers.push(timeControl*1000);
+		playersDrawAgreed.push(false);
+	}
 }
 
 //put a board into BOARD_DIV_ID div
@@ -46,7 +68,7 @@ function placeBoard() {
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
+	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null, `${BOARD_SIZE.toString(10)}px`);
 	image.addEventListener("click", getClickPosition, false);
 	return image;
 }
@@ -66,14 +88,14 @@ function getClickPosition(this: HTMLElement, ev: MouseEvent) {
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
 function addPiece(piece: number) {
 	let p = pieces[piece]!;
-	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
+	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece), `${CELL_SIZE.toString(10)}px`);
 	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
 	board_div.appendChild(htmlPiece);
 }
 
 //get an img div with given arguments
-function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = null, classList: string[] = [], onClick: (null|(() => void)) = null): HTMLElement {
+function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = null, classList: string[] = [], onClick: (null|(() => void)) = null, size: (string|null) = null): HTMLElement {
 	let image = document.createElement("img");
 	image.src = src; //i hate it, but i can just ignore the null 'src', it'll work just fine, ugh, my Java|Kotlin|C++|C brain hurts
 	image.alt = ifLoadFails;
@@ -83,6 +105,10 @@ function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = 
 			image.classList.add(classList[i]);
 	if(onClick != null)
 		image.onclick = onClick;
+	if(size != null) {
+		image.style.maxHeight = size;
+		image.style.maxWidth = size;
+	}
 	return image;
 }
 
@@ -176,6 +202,7 @@ function removePiece(piece: number) {
 
 //this function gets called for every clicked piece
 function pieceClicked(piece: number) {
+	if(gameState != GameState.Going) return;
 	let p = pieces[piece]!;
 	if(p.color == turn) {
 		//clicking on your piece
@@ -193,9 +220,10 @@ function pieceClicked(piece: number) {
 			//can move to (piece.x,piece.y) -> can capture
 			makeMove(selected, move.to);
 			nextTurn();
+			updateTurnStatus();
 			moves = allMoves();
 			updateBoard(); // because it may turn
-			checkWinner();
+			updateGameStatus();
 		}
 		deselect();
 	}
@@ -210,14 +238,32 @@ function boardClicked(x: number, y: number) {
 		//can move to (x,y) and it's empty
 		makeMove(selected, move.to);
 		nextTurn();
+		updateTurnStatus();
 		moves = allMoves();
 		updateBoard(); // because it may turn
-		checkWinner();
+		updateGameStatus();
 	}
 	deselect();
 }
 
-function checkWinner() {
+function updateTurnStatus() {
+	document.getElementById(TURN_STATUS_ID)!.innerText = (turn == Color.White ? "White's turn" : "Black's turn");
+}
+
+function updateTurnStatusGameEnded() {
+	document.getElementById(TURN_STATUS_ID)!.innerText = "Start a new game";
+}
+
+function updateGameStatusGameActive() {
+	document.getElementById(GAME_STATUS_ID)!.innerText = "Game is active";
+}
+
+function updateGameStatusGameInactive() {
+	document.getElementById(GAME_STATUS_ID)!.innerText = "Game is not active";
+}
+
+//call instead of updateGameState(moves)
+function updateGameStatus() {
 	if(updateGameState(moves)) {
 		//if the game has ended
 		if(gameState == GameState.Brutality) {
@@ -229,13 +275,18 @@ function checkWinner() {
 		} else if(gameState == GameState.InsufficientMaterial) {
 			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by insufficient material";
 		}
+		updateTurnStatusGameEnded();
 	}
 }
 
 //currently playing side is resigning
-function resign() {
-	winner = (turn == Color.White ? Color.Black : Color.White);
-	document.getElementById(GAME_STATUS_ID)!.innerText = winner == Color.White ? "White won" : "Black won";
+function playerDrawAgree(player: number) {
+	playersDrawAgreed[player] = true;
+}
+
+//currently playing side is resigning
+function playerDrawDisgree(player: number) {
+	playersDrawAgreed[player] = false;
 }
 
 /*
