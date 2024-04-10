@@ -1,10 +1,13 @@
+/* @media screen and (max-height: 900px) {
+	--
+} */
+
 body {
 	background-color: rgb(71, 71, 71);
-	/* height: 100%; */
 }
-button.cool {
-	color: purple;
-	border: 2px solid magenta;
+button {
+	border: 2px solid gainsboro;
+	border-radius: 5px;
 }
 #board_div {
 	display: grid;
