@@ -13,7 +13,13 @@
 			</div>
 
 			<div id="side_section">
-				<p id="game_status">A game is active</p>
+				<row>
+					<p>
+						<text id="game_status">A game is active</text>
+						<text> | </text>
+						<text id="turn_status">Black's turn</text>
+					</p>
+				</row>
 				
 				<button class="cool" type="button" onclick="initGame()">Start Game</button>
 				<button type="button" onclick="toggleViewDirection()">Flip</button>

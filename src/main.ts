@@ -9,9 +9,13 @@ const BOARD_SIZE = 600;
 const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
 
 //of view_direction is not null, it overwrites the 'turn' view
-var view_direction: (Color|null) = null;
+var viewDirection: (Color|null) = null;
 var htmlPieces: HTMLElement[] = [];
 var moves: Move[] = [];
+var timers: number[] = [];
+
+var timeControl: number = 300; //inital time; in seconds
+var timeBonus: number = 3; //added with each turn; in seconds
 
 /*
 	board initialization functions
@@ -30,6 +34,9 @@ function initGame() {
     }, /* on capture: */ (piece: number) => {
 		removePiece(piece);
     });
+	//init timers
+	for(let i = 0; i < PLAYERS; i++)
+		timers.push(timeControl*1000);
 }
 
 //put a board into BOARD_DIV_ID div
@@ -236,28 +243,28 @@ function resign() {
 */
 
 function toggleViewDirection() {
-	if(view_direction == null) {
+	if(viewDirection == null) {
 		if(turn == Color.White)
-			view_direction = Color.Black;
+			viewDirection = Color.Black;
 		else
-			view_direction = Color.White;
-	} else if(view_direction == Color.White) {
-		view_direction = Color.Black;
+			viewDirection = Color.White;
+	} else if(viewDirection == Color.White) {
+		viewDirection = Color.Black;
 	} else {
-		view_direction = Color.White;
+		viewDirection = Color.White;
 	}
 	updateBoard();
 }
 
 function resetViewDirection() {
-	view_direction = null;
+	viewDirection = null;
 	updateBoard();
 }
 
 function getViewDirection(): Color {
-	if(view_direction == null)
+	if(viewDirection == null)
 		return turn;
-	return view_direction;
+	return viewDirection;
 }
 
 //check if a move 'move' is available this turn; return the actual move to be taken (may change move.type field) or null if not available

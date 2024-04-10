@@ -28,8 +28,10 @@ button.cool {
 	max-height: 75px;
 }
 .selected {
-	border: 1px solid black;
+	/* border: 1px solid black; */
+	background-color: rgba(203, 255, 126, 0.5);
 }
+
 .center_text {
 	text-align: center;
 }
@@ -48,12 +50,12 @@ button.cool {
 	grid-column: board_div_start/mid;
 	background-color: rgb(100, 100, 100);
 	padding: 100px;
-	border-radius: 3% 0% 0% 3%;
+	border-radius: 10px 0px 0px 10px;
 }
 #side_section {
 	grid-column: mid/side_div_end;
 	max-width: 750px; /* 800 - 25*2 */
 	background-color: rgb(146, 146, 146);
 	padding: 25px;
-	border-radius: 0% 3% 3% 0%;
+	border-radius: 0px 10px 10px 0px;
 }
