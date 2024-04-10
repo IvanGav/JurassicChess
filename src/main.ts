@@ -3,8 +3,8 @@ const BOARD_ID = "board";
 const GAME_STATUS_ID = "game_status";
 const PIECE_CLASS = "piece";
 const SELECTED_CLASS = "selected";
-const CELL_SIZE = 75;
 const BOARD_SIZE = 600;
+const CELL_SIZE = BOARD_SIZE/8;
 
 const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
 
@@ -27,13 +27,13 @@ function initGame() {
 	placeBoard();
 	for(let i = 0; i < pieces.length; i++)
 		addPiece(i);
-	moves = allMoves();
 	setCallbacks(/* on promotion: */ (piece: number) => {
 		removePiece(piece);
 		addPiece(piece);
     }, /* on capture: */ (piece: number) => {
 		removePiece(piece);
     });
+	moves = allMoves();
 	//init timers
 	for(let i = 0; i < PLAYERS; i++)
 		timers.push(timeControl*1000);
@@ -243,21 +243,17 @@ function resign() {
 */
 
 function toggleViewDirection() {
-	if(viewDirection == null) {
-		if(turn == Color.White)
-			viewDirection = Color.Black;
-		else
-			viewDirection = Color.White;
-	} else if(viewDirection == Color.White) {
-		viewDirection = Color.Black;
-	} else {
-		viewDirection = Color.White;
-	}
+	viewDirection = _opposite(getViewDirection());
 	updateBoard();
 }
 
 function resetViewDirection() {
 	viewDirection = null;
+	updateBoard();
+}
+
+function lockViewDirection() {
+	viewDirection = getViewDirection();
 	updateBoard();
 }
 
