@@ -78,9 +78,7 @@ function placeBoard() {
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = document.createElement("div");
-	image.id = BOARD_ID;
-	// let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
+	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
 	image.addEventListener("click", getClickPosition, false);
 	return image;
 }
@@ -104,12 +102,12 @@ function addPiece(piece: number) {
 	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
 	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
-	document.getElementById(BOARD_ID)?.appendChild(htmlPiece);
+	document.getElementById(BOARD_DIV_ID)!.appendChild(htmlPiece);
 }
 
 //remove an associated html and a board piece 'piece'
 function removePiece(piece: number) {
-	document.getElementById(BOARD_ID)?.removeChild(htmlPieces[piece]);
+	document.getElementById(BOARD_DIV_ID)!.removeChild(htmlPieces[piece]);
 }
 
 //get an img div with given arguments
@@ -181,15 +179,11 @@ function updatePiecePosition(piece: number) {
 	let htmlPiece = htmlPieces[piece];
 	let p = pieces[piece]!;
 	if(getViewDirection() == Color.White) {
-	    // htmlPiece.style.left = p.x*CELL_SIZE + "px";
-		// htmlPiece.style.top = (BOARD_SIZE - (p.y + 1)*CELL_SIZE) + "px";
-		htmlPiece.style.gridColumn = (p.x).toString(10);
-		htmlPiece.style.gridRow = (8-p.y).toString(10);
+	    htmlPiece.style.left = `${p.x*8.75}vh`;
+		htmlPiece.style.top = `${(70 - (p.y + 1)*8.75)}vh`;
     } else {
-	    // htmlPiece.style.left = (BOARD_SIZE - (p.x + 1)*CELL_SIZE) + "px";
-		// htmlPiece.style.top = p.y*CELL_SIZE + "px";
-		htmlPiece.style.gridColumn = (8-p.x).toString(10);
-		htmlPiece.style.gridRow = (p.y).toString(10);
+	    htmlPiece.style.left = `${(70 - (p.x + 1)*8.75)}vh`;
+		htmlPiece.style.top = `${p.y*8.75}vh`;
     }
 }
 

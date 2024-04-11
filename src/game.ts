@@ -494,14 +494,14 @@ function moveLegal(piece: number, to: Coord): boolean {
     _whatIfRevert();
     //if it's castling, make sure there's also no check on the way to the final square
     if(to.type == MoveType.LongCastle) {
-        _whatIf(piece, {x: to.x-1, y: to.y});
+        _whatIf(piece, {x: to.x+1, y: to.y});
         if(kingInCheck(p.color)) {
             _whatIfRevert();
             return false;
         }
         _whatIfRevert();
     } else if(to.type == MoveType.ShortCastle) {
-        _whatIf(piece, {x: to.x+1, y: to.y});
+        _whatIf(piece, {x: to.x-1, y: to.y});
         if(kingInCheck(p.color)) {
             _whatIfRevert();
             return false;
