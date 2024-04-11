@@ -549,7 +549,7 @@ function kingInCheck(color: Color): boolean {
 }
 
 //should be called at the beginning of every move with input of all possible moves for current player
-function updateGameState(moves: Move[], agreedDraw: boolean = false): boolean {
+function updateGameState(moves: Move[], agreedDraw: boolean): boolean {
     if(agreedDraw) {
         winner = null;
         gameState = GameState.AgreedDraw;

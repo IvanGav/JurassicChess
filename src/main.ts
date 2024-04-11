@@ -1,5 +1,7 @@
 const BOARD_DIV_ID = "board_div";
 const BOARD_ID = "board";
+const AGREE_DRAW_ID = "agree_draw";
+const AGREE_DRAW_COUNT_ID = "agree_draw_count";
 const GAME_STATUS_ID = "game_status";
 const TURN_STATUS_ID = "turn_status";
 const PIECE_CLASS = "piece";
@@ -17,8 +19,6 @@ var CELL_SIZE = BOARD_SIZE/8;
 var screenHeight = window.innerHeight;
 var screenWidth = window.innerWidth;
 
-const board_div: HTMLElement = document.getElementById(BOARD_DIV_ID)!;
-
 //of view_direction is not null, it overwrites the 'turn' view
 var viewDirection: (Color|null) = null;
 var htmlPieces: HTMLElement[] = [];
@@ -28,6 +28,7 @@ var moves: Move[] = [];
 var player: number = 0;
 var timers: number[] = [];
 var playersDrawAgreed: boolean[] = [];
+var playersDrawAgreedCount: number = 0;
 
 var timeControl: number = 300; //inital time; in seconds
 var timeBonus: number = 3; //added with each turn; in seconds
@@ -40,6 +41,7 @@ var timeBonus: number = 3; //added with each turn; in seconds
 function initGame() {
 	initBoard();
 	placeBoard();
+	updateBoardSize();
 	for(let i = 0; i < pieces.length; i++)
 		addPiece(i);
 	setCallbacks(/* on promotion: */ (piece: number) => {
@@ -52,6 +54,7 @@ function initGame() {
 	updateTurnStatus();
 	updateGameStatusGameActive();
 	player = 0;
+	playersDrawAgreedCount = 0;
 	//init player variables
 	timers = [];
 	playersDrawAgreed = [];
@@ -61,20 +64,30 @@ function initGame() {
 	}
 }
 
+function updateBoardSize() {
+	let height = document.getElementById(BOARD_ID)?.offsetHeight;
+	if(height == undefined) return;
+	BOARD_SIZE = height;
+	CELL_SIZE = BOARD_SIZE/8;
+}
+
 //put a board into BOARD_DIV_ID div
 function placeBoard() {
-	board_div.replaceChildren(createBoard());
+	document.getElementById(BOARD_DIV_ID)!.replaceChildren(createBoard());
 }
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null, `${BOARD_SIZE.toString(10)}px`);
+	let image = document.createElement("div");
+	image.id = BOARD_ID;
+	// let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
 	image.addEventListener("click", getClickPosition, false);
 	return image;
 }
 
 //gets called for every click on board
 function getClickPosition(this: HTMLElement, ev: MouseEvent) {
+	updateBoardSize();
 	var x = Math.floor(ev.offsetX/CELL_SIZE);
 	var y = Math.floor(ev.offsetY/CELL_SIZE);
     if(getViewDirection() == Color.White) {
@@ -88,10 +101,15 @@ function getClickPosition(this: HTMLElement, ev: MouseEvent) {
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
 function addPiece(piece: number) {
 	let p = pieces[piece]!;
-	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece), `${CELL_SIZE.toString(10)}px`);
+	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
 	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
-	board_div.appendChild(htmlPiece);
+	document.getElementById(BOARD_ID)?.appendChild(htmlPiece);
+}
+
+//remove an associated html and a board piece 'piece'
+function removePiece(piece: number) {
+	document.getElementById(BOARD_ID)?.removeChild(htmlPieces[piece]);
 }
 
 //get an img div with given arguments
@@ -163,11 +181,15 @@ function updatePiecePosition(piece: number) {
 	let htmlPiece = htmlPieces[piece];
 	let p = pieces[piece]!;
 	if(getViewDirection() == Color.White) {
-	    htmlPiece.style.left = p.x*CELL_SIZE + "px";
-		htmlPiece.style.top = (BOARD_SIZE - (p.y + 1)*CELL_SIZE) + "px";
+	    // htmlPiece.style.left = p.x*CELL_SIZE + "px";
+		// htmlPiece.style.top = (BOARD_SIZE - (p.y + 1)*CELL_SIZE) + "px";
+		htmlPiece.style.gridColumn = (p.x).toString(10);
+		htmlPiece.style.gridRow = (8-p.y).toString(10);
     } else {
-	    htmlPiece.style.left = (BOARD_SIZE - (p.x + 1)*CELL_SIZE) + "px";
-		htmlPiece.style.top = p.y*CELL_SIZE + "px";
+	    // htmlPiece.style.left = (BOARD_SIZE - (p.x + 1)*CELL_SIZE) + "px";
+		// htmlPiece.style.top = p.y*CELL_SIZE + "px";
+		htmlPiece.style.gridColumn = (8-p.x).toString(10);
+		htmlPiece.style.gridRow = (p.y).toString(10);
     }
 }
 
@@ -195,11 +217,6 @@ function updateBoard() {
 	}
 }
 
-//remove an associated html and a board piece 'piece'
-function removePiece(piece: number) {
-	board_div.removeChild(htmlPieces[piece]);
-}
-
 //this function gets called for every clicked piece
 function pieceClicked(piece: number) {
 	if(gameState != GameState.Going) return;
@@ -213,19 +230,7 @@ function pieceClicked(piece: number) {
 		}
 	} else {
 		//clicking on opponent piece
-		if(selected == NONE) return; //ERROR: comparing to null isntead of NONE
-		let s = pieces[selected]!;
-		let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: p.x, y: p.y}});
-		if(move != null) {
-			//can move to (piece.x,piece.y) -> can capture
-			makeMove(selected, move.to);
-			nextTurn();
-			updateTurnStatus();
-			moves = allMoves();
-			updateBoard(); // because it may turn
-			updateGameStatus();
-		}
-		deselect();
+		boardClicked(p.x, p.y);
 	}
 }
 
@@ -235,9 +240,10 @@ function boardClicked(x: number, y: number) {
 	let s = pieces[selected]!;
 	let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: x, y: y}});
 	if(move != null) {
-		//can move to (x,y) and it's empty
+		//can move to (x,y)
 		makeMove(selected, move.to);
-		nextTurn();
+		setDrawStatus();
+		passTurnToNextPlayer();
 		updateTurnStatus();
 		moves = allMoves();
 		updateBoard(); // because it may turn
@@ -246,8 +252,24 @@ function boardClicked(x: number, y: number) {
 	deselect();
 }
 
+function passTurnToNextPlayer() {
+	nextTurn();
+	player++;
+	if(player == PLAYERS) player = 0;
+}
+
+function setDrawStatus() {
+	let isChecked = (document.getElementById(AGREE_DRAW_ID) as HTMLInputElement).checked;
+	if(isChecked != playersDrawAgreed[player]) {
+		playersDrawAgreedCount += isChecked ? 1 : -1;
+		playersDrawAgreed[player] = isChecked;
+	}
+}
+
 function updateTurnStatus() {
 	document.getElementById(TURN_STATUS_ID)!.innerText = (turn == Color.White ? "White's turn" : "Black's turn");
+	(document.getElementById(AGREE_DRAW_ID) as HTMLInputElement).checked = playersDrawAgreed[player];
+	document.getElementById(AGREE_DRAW_COUNT_ID)!.innerHTML = `(${playersDrawAgreedCount}/${PLAYERS})`;
 }
 
 function updateTurnStatusGameEnded() {
@@ -264,7 +286,7 @@ function updateGameStatusGameInactive() {
 
 //call instead of updateGameState(moves)
 function updateGameStatus() {
-	if(updateGameState(moves)) {
+	if(updateGameState(moves, playersDrawAgreedCount >= DRAW_VOTE_REQUIRED)) {
 		//if the game has ended
 		if(gameState == GameState.Brutality) {
 			document.getElementById(GAME_STATUS_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
@@ -274,6 +296,8 @@ function updateGameStatus() {
 			document.getElementById(GAME_STATUS_ID)!.innerText = "Stalemate";
 		} else if(gameState == GameState.InsufficientMaterial) {
 			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by insufficient material";
+		} else if(gameState == GameState.AgreedDraw) {
+			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by agreement";
 		}
 		updateTurnStatusGameEnded();
 	}

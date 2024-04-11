@@ -14,25 +14,31 @@ button:active {
 	background-color: gray;
 }
 #board_div {
-	display: grid;
-	max-width: 600px;
-	max-height: 600px;
+	/* max-width: 600px;
+	max-height: 600px; */
+	max-width: 70vh;
+	max-height: 70vh;
 }
 #board {
-	grid-row: 1;
-	grid-column: 1;
-	max-width: 600px;
-	max-height: 600px;
+	display: grid;
+	grid-template-rows: repeat(8, 8.75vh);
+	grid-template-columns: repeat(8, 8.75vh);
+	/* max-width: 600px;
+	max-height: 600px; */
+	width: 70vh;
+	height: 70vh;
 }
 #title {
 	color: whitesmoke;
 }
 .piece {
-	grid-row: 1;
-	grid-column: 1;
-	position: relative;
-	max-width: 75px;
-	max-height: 75px;
+	/* grid-row: 1;
+	grid-column: 1; */
+	/* position: relative; */
+	/* max-width: 75px;
+	max-height: 75px; */
+	max-width: 8.75vh;
+	max-height: 8.75vh;
 }
 .selected {
 	/* border: 1px solid black; */
@@ -49,20 +55,20 @@ button:active {
 
 #game_body {
 	display: grid;
-	grid-template-columns: [start] 5vw [board_div_start] 800px [mid] auto [side_div_end] 5vw [end];
-	height: 90vh;
+	grid-template-columns: [start] 5vw [board_div_start] 80vh [mid] auto [side_div_end] 5vw [end];
+	height: 80vh;
   	padding: 0;
 }
 #board_section {
 	grid-column: board_div_start/mid;
 	background-color: rgb(100, 100, 100);
-	padding: 100px;
+	padding: 5vh;
 	border-radius: 10px 0px 0px 10px;
 }
 #side_section {
 	grid-column: mid/side_div_end;
-	max-width: 750px; /* 800 - 25*2 */
+	/* max-width: 750px; */
 	background-color: rgb(146, 146, 146);
-	padding: 25px;
+	padding: 1.25vh;
 	border-radius: 0px 10px 10px 0px;
 }
