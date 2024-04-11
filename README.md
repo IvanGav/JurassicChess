@@ -1,6 +1,6 @@
-# Crazy9x9
+# Jurassic Chess
 
-This is web version of Crazy9x9 (read "crazy nines") Chess variant. It's completely made up my a small group of people including me (If you're one of them and want to be mentioned here, tell). It's very scuffed.
+Jurassic chess variant. Don't expect it to be good, it's quite *prehistoric*.
 
 Written in Typescript (ts). To compile ts files, you can use `./mk.bash`. 
 Generated Javascript (js) files will be put into the home directory, together with "index.html". 
