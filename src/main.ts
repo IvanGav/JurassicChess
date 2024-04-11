@@ -133,39 +133,51 @@ function getPieceImage(piece: Piece, color: Color): string {
 	switch(piece) {
 		case Piece.Pawn: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/bp.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/bp.png";
+				return "images/z_bv.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wp.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wp.png";
+				return "images/z_wv.png";
 		}
 		case Piece.Knight: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/bn.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/bn.png";
+				return "images/z_bp.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wn.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wn.png";
+				return "images/z_wp.png";
 		}
 		case Piece.Bishop: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/bb.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/bb.png";
+				return "images/z_br.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wb.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wb.png";
+				return "images/z_wr.png";
 		}
 		case Piece.Rook: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/br.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/br.png";
+				return "images/z_bt.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wr.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wr.png";
+				return "images/z_wt.png";
 		}
 		case Piece.Queen: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/bq.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/bq.png";
+				return "images/z_bd.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wq.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wq.png";
+				return "images/z_wd.png";
 		}
 		case Piece.King: {
 			if(color == Color.Black)
-				return "https://assets-themes.chess.com/image/ejgfv/150/bk.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/bk.png";
+				return "images/z_bh.png";
 			else
-				return "https://assets-themes.chess.com/image/ejgfv/150/wk.png";
+				// return "https://assets-themes.chess.com/image/ejgfv/150/wk.png";
+				return "images/z_wh.png";
 		}
 	}
 }
