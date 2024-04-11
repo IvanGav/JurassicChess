@@ -1,29 +1,91 @@
+/* @media screen and (max-height: 900px) {
+	--
+} */
+
 body {
-	background-color: powderblue;
+	background-color: rgb(71, 71, 71);
 }
-button.cool {
-	color: purple;
-	border: 2px solid magenta;
+button {
+	border: 2px solid gainsboro;
+	background-color: white;
+	border-radius: 5px;
+}
+button:active {
+	background-color: gray;
+}
+#game_div { 
+	display: grid;
+	/* grid-template-rows: repeat(8, 8.75vh);
+	grid-template-columns: repeat(8, 8.75vh); */
+	max-width: 70vh;
+	max-height: 70vh;
+}
+#pieces_div {
+	display: grid;
+	grid-row: 1;
+	grid-column: 1;
+}
+#moves_div {
+	display: grid;
+	grid-row: 1;
+	grid-column: 1;
 }
 #board_div {
-	display: grid;
-	max-width: 600px;
-	max-height: 600px;
+	grid-row: 1;
+	grid-column: 1;
 }
 #board {
 	grid-row: 1;
 	grid-column: 1;
-	/* display: grid; */
-	max-width: 600px;
-	max-height: 600px;
+	width: 70vh;
+	height: 70vh;
+	position: relative; /* i want to note that this like is crcial, because it, somehow, allows detecting clicks through other divs, but *not* other images (idk how) */
+}
+#title {
+	color: whitesmoke;
 }
 .piece {
 	grid-row: 1;
 	grid-column: 1;
 	position: relative;
-	max-width: 75px;
-	max-height: 75px;
+	max-width: 8.75vh;
+	max-height: 8.75vh;
+}
+.move_indicator {
+	grid-row: 1;
+	grid-column: 1;
+	position: relative;
+	max-width: 8.75vh;
+	max-height: 8.75vh;
 }
 .selected {
-	border: 1px solid black;
+	background-color: rgba(203, 255, 126, 0.5);
+}
+
+.center_text {
+	text-align: center;
+}
+.row {
+	display: flex;
+	flex-direction: row;
+}
+
+#game_body {
+	display: grid;
+	grid-template-columns: [start] 5vw [board_div_start] 80vh [mid] auto [side_div_end] 5vw [end];
+	height: 80vh;
+  	padding: 0;
+}
+#board_section {
+	grid-column: board_div_start/mid;
+	background-color: rgb(100, 100, 100);
+	padding: 5vh;
+	border-radius: 10px 0px 0px 10px;
+}
+#side_section {
+	grid-column: mid/side_div_end;
+	/* max-width: 750px; */
+	background-color: rgb(146, 146, 146);
+	padding: 1.25vh;
+	border-radius: 0px 10px 10px 0px;
 }
