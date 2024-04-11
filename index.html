@@ -9,7 +9,8 @@
 		</div>
 		<div id="game_body">
 			<div id="board_section">
-				<div id="board_div"></div>
+				<div id="game_div">
+				</div>
 			</div>
 
 			<div id="side_section">
@@ -42,8 +43,7 @@
 			//JURASSIC CHESS:
 			_jurassicBoard(pieces);
 			placeBoard();
-			for(let i = 0; i < pieces.length; i++)
-				addPiece(i);
+			putPieces();
 		</script>
 	</body>
 </html>

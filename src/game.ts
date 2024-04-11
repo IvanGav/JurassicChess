@@ -38,7 +38,7 @@ enum Color {
 }
 
 enum MoveType {
-    // Normal = 0,
+    Capture = 0, //serves no purpose for game.ts, but indicates info to main.ts
     ShortCastle = 1,
     LongCastle = 2,
     EnPassant = 3,
@@ -450,22 +450,22 @@ function _allStraight(piece: number): Coord[] {
     for(x = p.x-1; x >= 0 && board[p.y][x] == NONE; x--)
         all.push({x: x, y: p.y});
     if(x >= 0 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y});
+        all.push({x: x, y: p.y, type: MoveType.Capture});
     //right
     for(x = p.x+1; x < 8 && board[p.y][x] == NONE; x++)
         all.push({x: x, y: p.y});
     if(x < 8 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y});
+        all.push({x: x, y: p.y, type: MoveType.Capture});
     //up
     for(y = p.y-1; y >= 0 && board[y][p.x] == NONE; y--)
         all.push({x: p.x, y: y});
     if(y >= 0 && pieces[board[y][p.x]]!.color != p.color)
-        all.push({x: p.x, y: y});
+        all.push({x: p.x, y: y, type: MoveType.Capture});
     //down
     for(y = p.y+1; y < 8 && board[y][p.x] == NONE; y++)
         all.push({x: p.x, y: y});
     if(y < 8 && pieces[board[y][p.x]]!.color != p.color)
-        all.push({x: p.x, y: y});
+        all.push({x: p.x, y: y, type: MoveType.Capture});
     return all;
 }
 
@@ -480,22 +480,22 @@ function _allDiagonal(piece: number): Coord[] {
     for(x = p.x-1, y = p.y-1; x >= 0 && y >= 0 && board[y][x] == NONE; x--, y--)
         all.push({x: x, y: y});
     if(x >= 0 && y >= 0 && pieces[board[y][x]]!.color != p.color)
-        all.push({x: x, y: y});
+        all.push({x: x, y: y, type: MoveType.Capture});
     //top right
     for(x = p.x+1, y = p.y-1; x < 8 && y >= 0 && board[y][x] == NONE; x++, y--)
         all.push({x: x, y: y});
     if(x < 8 && y >= 0 && pieces[board[y][x]]!.color != p.color)
-        all.push({x: x, y: y});
+        all.push({x: x, y: y, type: MoveType.Capture});
     //bottom left
     for(x = p.x-1, y = p.y+1; x >= 0 && y < 8 && board[y][x] == NONE; x--, y++)
         all.push({x: x, y: y});
     if(x >= 0 && y < 8 && pieces[board[y][x]]!.color != p.color)
-        all.push({x: x, y: y});
+        all.push({x: x, y: y, type: MoveType.Capture});
     //bottom right
     for(x = p.x+1, y = p.y+1; x < 8 && y < 8 && board[y][x] == NONE; x++, y++)
         all.push({x: x, y: y});
     if(x < 8 && y < 8 && pieces[board[y][x]]!.color != p.color)
-        all.push({x: x, y: y});
+        all.push({x: x, y: y, type: MoveType.Capture});
     return all;
 }
 
@@ -506,8 +506,11 @@ function _allSet(piece: number, set: Coord[]): Coord[] {
     if(p == null) return [];
     let all: Coord[] = [];
     for(let i = 0; i < set.length; i++) {
-        if(p.x + set[i].x >= 0 && p.x + set[i].x < 8 && p.y + set[i].y >= 0 && p.y + set[i].y < 8 && pieceAt({x: p.x + set[i].x, y: p.y + set[i].y})?.color != p.color)
-            all.push({x: p.x + set[i].x, y: p.y + set[i].y});
+        if(p.x + set[i].x >= 0 && p.x + set[i].x < 8 && p.y + set[i].y >= 0 && p.y + set[i].y < 8)
+            if(pieceAt({x: p.x + set[i].x, y: p.y + set[i].y}) == null)
+                all.push({x: p.x + set[i].x, y: p.y + set[i].y});
+            else if(pieceAt({x: p.x + set[i].x, y: p.y + set[i].y})!.color == _opposite(p.color))
+                all.push({x: p.x + set[i].x, y: p.y + set[i].y, type: MoveType.Capture});
     }
     return all;
 }
@@ -542,9 +545,9 @@ function _allPawn(piece: number): Coord[] {
 
     //capture
     if(pieceAt({x: p.x+1, y: p.y+moveDirection})?.color == _opposite(p.color))
-        all.push({x: p.x+1, y: p.y+moveDirection});
+        all.push({x: p.x+1, y: p.y+moveDirection, type: MoveType.Capture});
     if(pieceAt({x: p.x-1, y: p.y+moveDirection})?.color == _opposite(p.color))
-        all.push({x: p.x-1, y: p.y+moveDirection});
+        all.push({x: p.x-1, y: p.y+moveDirection, type: MoveType.Capture});
 
     //check promotion
     for(let i = 0; i < all.length; i++) {
@@ -593,33 +596,46 @@ function _allRex(piece: number): Coord[] {
     let moveDirection = (p.color == Color.White) ? 1 : -1;
 
     //backwards
-    if(_squareValid({x: p.x-1, y: p.y-moveDirection}) && pieceAt({x: p.x-1, y: p.y-moveDirection})?.color != p.color)
-        all.push({x: p.x-1, y: p.y-moveDirection});
-    if(_squareValid({x: p.x+1, y: p.y-moveDirection}) && pieceAt({x: p.x+1, y: p.y-moveDirection})?.color != p.color)
-        all.push({x: p.x+1, y: p.y-moveDirection});
+    if(_squareValid({x: p.x-1, y: p.y-moveDirection})) {
+        if(pieceAt({x: p.x-1, y: p.y-moveDirection}) == null)
+            all.push({x: p.x-1, y: p.y-moveDirection});
+        if(pieceAt({x: p.x-1, y: p.y-moveDirection})?.color == _opposite(p.color))
+            all.push({x: p.x-1, y: p.y-moveDirection, type: MoveType.Capture});
+    }
+    if(_squareValid({x: p.x+1, y: p.y-moveDirection})) {
+        if(pieceAt({x: p.x+1, y: p.y-moveDirection}) == null)
+            all.push({x: p.x+1, y: p.y-moveDirection});
+        if(pieceAt({x: p.x+1, y: p.y-moveDirection})?.color == _opposite(p.color))
+            all.push({x: p.x+1, y: p.y-moveDirection, type: MoveType.Capture});
+    }
     //left
     let leftAt: Coord = {x: p.x-1, y: p.y+moveDirection};
+    leftAt.type = pieceAt(leftAt)?.color == _opposite(p.color) ? MoveType.Capture : undefined;
     if(_squareValid(leftAt) && pieceAt(leftAt)?.color != p.color)
         all.push(leftAt);
     if(_squareValid({x: p.x-2, y: p.y+2*moveDirection}) && board[leftAt.y][leftAt.x] == NONE && pieceAt({x: p.x-2, y: p.y+2*moveDirection})?.color != p.color)
-        all.push({x: p.x-2, y: p.y+2*moveDirection});
+        all.push({x: p.x-2, y: p.y+2*moveDirection, type: board[p.y+2*moveDirection][p.x-2] == NONE ? undefined : MoveType.Capture});
     //up
     let upAt: Coord = {x: p.x, y: p.y+moveDirection};
+    upAt.type = pieceAt(upAt)?.color == _opposite(p.color) ? MoveType.Capture : undefined;
     if(_squareValid(upAt) && pieceAt(upAt)?.color != p.color)
         all.push(upAt);
     if(_squareValid({x: p.x, y: p.y+2*moveDirection}) && board[upAt.y][upAt.x] == NONE && pieceAt({x: p.x, y: p.y+2*moveDirection})?.color != p.color)
-        all.push({x: p.x, y: p.y+2*moveDirection});
+        all.push({x: p.x, y: p.y+2*moveDirection, type: board[p.y+2*moveDirection][p.x] == NONE ? undefined : MoveType.Capture});
     //right
     let rightAt: Coord = {x: p.x+1, y: p.y+moveDirection};
+    rightAt.type = pieceAt(rightAt)?.color == _opposite(p.color) ? MoveType.Capture : undefined;
     if(_squareValid(rightAt) && pieceAt(rightAt)?.color != p.color)
         all.push(rightAt);
     if(_squareValid({x: p.x+2, y: p.y+2*moveDirection}) && board[rightAt.y][rightAt.x] == NONE && pieceAt({x: p.x+2, y: p.y+2*moveDirection})?.color != p.color)
-        all.push({x: p.x+2, y: p.y+2*moveDirection});
+        all.push({x: p.x+2, y: p.y+2*moveDirection, type: board[p.y+2*moveDirection][p.x+2] == NONE ? undefined : MoveType.Capture});
     //knight-like
-    if(_squareValid({x: rightAt.y, y: p.y+2*moveDirection}) && (board[upAt.y][upAt.x] == NONE || board[rightAt.y][rightAt.x] == NONE))
-        all.push({x: rightAt.y, y: p.y+2*moveDirection});
-    if(_squareValid({x: leftAt.x, y: p.y+2*moveDirection}) && (board[upAt.y][upAt.x] == NONE || board[leftAt.y][leftAt.x] == NONE))
-        all.push({x: leftAt.x, y: p.y+2*moveDirection});
+    if(_squareValid({x: rightAt.x, y: p.y+2*moveDirection}) && (board[upAt.y][upAt.x] == NONE || board[rightAt.y][rightAt.x] == NONE) && 
+    pieceAt({x: rightAt.x, y: p.y+2*moveDirection})?.color != p.color)
+        all.push({x: rightAt.x, y: p.y+2*moveDirection, type: board[p.y+2*moveDirection][rightAt.x] == NONE ? undefined : MoveType.Capture});
+    if(_squareValid({x: leftAt.x, y: p.y+2*moveDirection}) && (board[upAt.y][upAt.x] == NONE || board[leftAt.y][leftAt.x] == NONE) && 
+    pieceAt({x: leftAt.x, y: p.y+2*moveDirection})?.color != p.color)
+        all.push({x: leftAt.x, y: p.y+2*moveDirection, type: board[p.y+2*moveDirection][leftAt.x] == NONE ? undefined : MoveType.Capture});
 
     return all;
 }
@@ -636,12 +652,12 @@ function _allTriceratops(piece: number): Coord[] {
     for(x = p.x-1; x >= 0 && board[p.y][x] == NONE; x--)
         all.push({x: x, y: p.y});
     if(x >= 0 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y});
+        all.push({x: x, y: p.y, type: MoveType.Capture});
     //right
     for(x = p.x+1; x < 8 && board[p.y][x] == NONE; x++)
         all.push({x: x, y: p.y});
     if(x < 8 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y});
+        all.push({x: x, y: p.y, type: MoveType.Capture});
     //up
     if(p.color == Color.White) {
         //up-left
@@ -649,21 +665,21 @@ function _allTriceratops(piece: number): Coord[] {
             for(y = p.y+1; y < 8 && board[y][p.x-1] == NONE; y++)
                 all.push({x: p.x-1, y: y});
             if(y < 8 && pieces[board[y][p.x-1]]!.color != p.color)
-                all.push({x: p.x-1, y: y});
+                all.push({x: p.x-1, y: y, type: MoveType.Capture});
         }
         //up-right
         if(p.x < 7) {
             for(y = p.y+1; y < 8 && board[y][p.x+1] == NONE; y++)
                 all.push({x: p.x+1, y: y});
             if(y < 8 && pieces[board[y][p.x+1]]!.color != p.color)
-                all.push({x: p.x+1, y: y});
+                all.push({x: p.x+1, y: y, type: MoveType.Capture});
         }
     } else {
         //up
         for(y = p.y+1; y < 8 && board[y][p.x] == NONE; y++)
             all.push({x: p.x, y: y});
         if(y < 8 && pieces[board[y][p.x]]!.color != p.color)
-            all.push({x: p.x, y: y});
+            all.push({x: p.x, y: y, type: MoveType.Capture});
     }
     //down
     if(p.color == Color.White) {
@@ -671,34 +687,24 @@ function _allTriceratops(piece: number): Coord[] {
         for(y = p.y-1; y >= 0 && board[y][p.x] == NONE; y--)
             all.push({x: p.x, y: y});
         if(y >= 0 && pieces[board[y][p.x]]!.color != p.color)
-            all.push({x: p.x, y: y});
+            all.push({x: p.x, y: y, type: MoveType.Capture});
     } else {
         //down-left
         if(p.x > 0) {
             for(y = p.y-1; y >= 0 && board[y][p.x-1] == NONE; y--)
                 all.push({x: p.x-1, y: y});
             if(y >= 0 && pieces[board[y][p.x-1]]!.color != p.color)
-                all.push({x: p.x-1, y: y});
+                all.push({x: p.x-1, y: y, type: MoveType.Capture});
         }
         //down-right
         if(p.x < 7) {
             for(y = p.y-1; y >= 0 && board[y][p.x+1] == NONE; y--)
                 all.push({x: p.x+1, y: y});
             if(y >= 0 && pieces[board[y][p.x+1]]!.color != p.color)
-                all.push({x: p.x+1, y: y});
+                all.push({x: p.x+1, y: y, type: MoveType.Capture});
         }
     }
 
-    return all;
-}
-
-//because of course i need this duplicate more flexible function, eh
-function _allSetFromCoord(at: Coord, set: Coord[]): Coord[] {
-    let all: Coord[] = [];
-    for(let i = 0; i < set.length; i++) {
-        if(at.x + set[i].x >= 0 && at.x + set[i].x < 8 && at.y + set[i].y >= 0 && at.y + set[i].y < 8 && pieceAt({x: at.x + set[i].x, y: at.y + set[i].y})?.color != turn)
-            all.push({x: at.x + set[i].x, y: at.y + set[i].y});
-    }
     return all;
 }
 
@@ -709,12 +715,7 @@ function _allDragon(piece: number): Coord[] {
     if(p == null) return [];
 
     let first = _allSet(piece, KNIGHT_RELATIVE_MOVES);
-
-    let second: Coord[] = [];
-
-    for(let i = 0; i < first.length; i++) {
-        second = second.concat(_allSetFromCoord(first[i], KNIGHT_RELATIVE_MOVES));
-    }
+    let second = _allStraight(piece);
 
     return first.concat(second);
 }
@@ -905,7 +906,8 @@ function _whatIf(piece: number, to: Coord) {
     _whatIfPiece1Id = piece;
     //special case: the move is en passant - save the captured pawn, not the square 'to'
     if(to.type == MoveType.EnPassant) {
-        let capture_at: Coord = {x: to.x, y: to.y};
+        let moveDirection = p.color == Color.White ? 1 : -1;
+        let capture_at: Coord = {x: to.x, y: to.y-moveDirection};
         _whatIfPiece2 = _copyPiece(pieceAt(capture_at));
         _whatIfPiece2Id = board[capture_at.y][capture_at.x];
     } else {

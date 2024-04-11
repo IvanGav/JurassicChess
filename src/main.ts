@@ -1,4 +1,7 @@
+const GAME_DIV_ID = "game_div";
 const BOARD_DIV_ID = "board_div";
+const MOVES_DIV_ID = "moves_div";
+const PIECES_DIV_ID = "pieces_div";
 const BOARD_ID = "board";
 const AGREE_DRAW_ID = "agree_draw";
 const AGREE_DRAW_COUNT_ID = "agree_draw_count";
@@ -39,16 +42,17 @@ var timeBonus: number = 3; //added with each turn; in seconds
 
 //init game
 function initGame() {
+	removeBoard();
 	initBoard();
 	placeBoard();
+	placeMovesIndicatorsDiv();
+	putPieces();
 	updateBoardSize();
-	for(let i = 0; i < pieces.length; i++)
-		addPiece(i);
 	setCallbacks(/* on promotion: */ (piece: number) => {
-		removePiece(piece);
-		addPiece(piece);
+		removePiece(piece, document.getElementById(PIECES_DIV_ID)!);
+		addPiece(piece, document.getElementById(PIECES_DIV_ID)!);
     }, /* on capture: */ (piece: number) => {
-		removePiece(piece);
+		removePiece(piece, document.getElementById(PIECES_DIV_ID)!);
     });
 	moves = allMoves();
 	updateTurnStatus();
@@ -64,6 +68,11 @@ function initGame() {
 	}
 }
 
+function removeBoard() {
+	document.getElementById(GAME_DIV_ID)!.replaceChildren();
+
+}
+
 function updateBoardSize() {
 	let height = document.getElementById(BOARD_ID)?.offsetHeight;
 	if(height == undefined) return;
@@ -71,43 +80,59 @@ function updateBoardSize() {
 	CELL_SIZE = BOARD_SIZE/8;
 }
 
-//put a board into BOARD_DIV_ID div
 function placeBoard() {
-	document.getElementById(BOARD_DIV_ID)!.replaceChildren(createBoard());
+	let board_div = document.createElement("div");
+	board_div.id = BOARD_DIV_ID;
+	board_div.appendChild(createBoard());
+	document.getElementById(GAME_DIV_ID)!.appendChild(board_div);
 }
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = getImg("images/200.png", "board image", BOARD_ID, [], null);
-	image.addEventListener("click", getClickPosition, false);
+	let image = getImg("images/200.png", "board image", BOARD_ID, [], () => deselect());
+	// image.addEventListener("click", getClickPosition, false);
 	return image;
 }
 
 //gets called for every click on board
-function getClickPosition(this: HTMLElement, ev: MouseEvent) {
-	updateBoardSize();
-	var x = Math.floor(ev.offsetX/CELL_SIZE);
-	var y = Math.floor(ev.offsetY/CELL_SIZE);
-    if(getViewDirection() == Color.White) {
-        y = 7 - y;
-    } else {
-        x = 7 - x;
-    }
-	boardClicked(x, y);
+// function getClickPosition(this: HTMLElement, ev: MouseEvent) {
+// 	updateBoardSize();
+// 	var x = Math.floor(ev.offsetX/CELL_SIZE);
+// 	var y = Math.floor(ev.offsetY/CELL_SIZE);
+//     if(getViewDirection() == Color.White) {
+//         y = 7 - y;
+//     } else {
+//         x = 7 - x;
+//     }
+// 	boardClicked(x, y);
+// }
+
+function placeMovesIndicatorsDiv() {
+	let moves_div = document.createElement("div");
+	moves_div.id = MOVES_DIV_ID;
+	document.getElementById(GAME_DIV_ID)!.appendChild(moves_div);
+}
+
+function putPieces() {
+	let pieces_div = document.createElement("div");
+	pieces_div.id = PIECES_DIV_ID;
+	for(let i = 0; i < pieces.length; i++)
+		addPiece(i, pieces_div);
+	document.getElementById(GAME_DIV_ID)!.appendChild(pieces_div);
 }
 
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
-function addPiece(piece: number) {
+function addPiece(piece: number, board: HTMLElement) {
 	let p = pieces[piece]!;
 	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
 	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
-	document.getElementById(BOARD_DIV_ID)!.appendChild(htmlPiece);
+	board.appendChild(htmlPiece);
 }
 
 //remove an associated html and a board piece 'piece'
-function removePiece(piece: number) {
-	document.getElementById(BOARD_DIV_ID)!.removeChild(htmlPieces[piece]);
+function removePiece(piece: number, board: HTMLElement) {
+	board.removeChild(htmlPieces[piece]);
 }
 
 //get an img div with given arguments
@@ -217,12 +242,38 @@ function updatePiecePosition(piece: number) {
     }
 }
 
+function putMoveIndicators() {
+	if(selected == NONE) return;
+	let p = pieces[selected];
+	if(p == null) return;
+
+	for(let i = 0; i < moves.length; i++) {
+		if(moves[i].from.x != p.x || moves[i].from.y != p.y) continue;
+		let moveIndicator = getImg(moves[i].to.type == MoveType.Capture ? "images/can_capture.png" : "images/can_move.png", "move_indicator", null, ["move_indicator"], () => {
+			boardClicked(moves[i].to.x, moves[i].to.y);
+		});
+		if(getViewDirection() == Color.White) {
+			moveIndicator.style.left = `${moves[i].to.x*8.75}vh`;
+			moveIndicator.style.top = `${(70 - (moves[i].to.y + 1)*8.75)}vh`;
+		} else {
+			moveIndicator.style.left = `${(70 - (moves[i].to.x + 1)*8.75)}vh`;
+			moveIndicator.style.top = `${moves[i].to.y*8.75}vh`;
+		}
+		document.getElementById(MOVES_DIV_ID)!.appendChild(moveIndicator);
+	}
+}
+
+function clearMoveIndicators() {
+	document.getElementById(MOVES_DIV_ID)!.innerHTML = "";
+}
+
 //deselect the currently selected (if any) piece (both html and variable)
 function deselect() {
 	if(selected != NONE) {
 		htmlPieces[selected].classList.remove("selected");
 	}
 	selected = NONE;
+	clearMoveIndicators();
 }
 
 //select a piece (both html and variable) (deselect if anything is selected)
@@ -230,10 +281,12 @@ function select(piece: number) {
 	deselect();
 	htmlPieces[piece].classList.add("selected");
 	selected = piece;
+	putMoveIndicators();
 }
 
 //will completely ignore captured pieces; fully update the state of the board
 function updateBoard() {
+	putMoveIndicators();
 	for(let i = 0; i < pieces.length; i++) {
 		if(pieces[i] != null) {
 			updatePiecePosition(i);
