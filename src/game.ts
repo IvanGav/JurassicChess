@@ -647,64 +647,40 @@ function _allTriceratops(piece: number): Coord[] {
 
     let all: Coord[] = [];
     let x = -1, y = -1;
-
-    //left
-    for(x = p.x-1; x >= 0 && board[p.y][x] == NONE; x--)
-        all.push({x: x, y: p.y});
-    if(x >= 0 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y, type: MoveType.Capture});
-    //right
-    for(x = p.x+1; x < 8 && board[p.y][x] == NONE; x++)
-        all.push({x: x, y: p.y});
-    if(x < 8 && pieces[board[p.y][x]]!.color != p.color)
-        all.push({x: x, y: p.y, type: MoveType.Capture});
+    
     //up
-    if(p.color == Color.White) {
-        //up-left
-        if(p.x > 0) {
-            for(y = p.y+1; y < 8 && board[y][p.x-1] == NONE; y++)
-                all.push({x: p.x-1, y: y});
-            if(y < 8 && pieces[board[y][p.x-1]]!.color != p.color)
-                all.push({x: p.x-1, y: y, type: MoveType.Capture});
-        }
-        //up-right
-        if(p.x < 7) {
-            for(y = p.y+1; y < 8 && board[y][p.x+1] == NONE; y++)
-                all.push({x: p.x+1, y: y});
-            if(y < 8 && pieces[board[y][p.x+1]]!.color != p.color)
-                all.push({x: p.x+1, y: y, type: MoveType.Capture});
-        }
-    } else {
-        //up
-        for(y = p.y+1; y < 8 && board[y][p.x] == NONE; y++)
-            all.push({x: p.x, y: y});
-        if(y < 8 && pieces[board[y][p.x]]!.color != p.color)
-            all.push({x: p.x, y: y, type: MoveType.Capture});
-    }
+    for(y = p.y-1; y >= 0 && board[y][p.x] == NONE; y--)
+        all.push({x: p.x, y: y});
+    if(y >= 0 && pieces[board[y][p.x]]!.color != p.color)
+        all.push({x: p.x, y: y, type: MoveType.Capture});
     //down
-    if(p.color == Color.White) {
-        //down
-        for(y = p.y-1; y >= 0 && board[y][p.x] == NONE; y--)
-            all.push({x: p.x, y: y});
-        if(y >= 0 && pieces[board[y][p.x]]!.color != p.color)
-            all.push({x: p.x, y: y, type: MoveType.Capture});
+    for(y = p.y+1; y < 8 && board[y][p.x] == NONE; y++)
+        all.push({x: p.x, y: y});
+    if(y < 8 && pieces[board[y][p.x]]!.color != p.color)
+        all.push({x: p.x, y: y, type: MoveType.Capture});
+    if(p.color == Color.Black) {
+        //top left
+        for(x = p.x-1, y = p.y-1; x >= 0 && y >= 0 && board[y][x] == NONE; x--, y--)
+            all.push({x: x, y: y});
+        if(x >= 0 && y >= 0 && pieces[board[y][x]]!.color != p.color)
+            all.push({x: x, y: y, type: MoveType.Capture});
+        //top right
+        for(x = p.x+1, y = p.y-1; x < 8 && y >= 0 && board[y][x] == NONE; x++, y--)
+            all.push({x: x, y: y});
+        if(x < 8 && y >= 0 && pieces[board[y][x]]!.color != p.color)
+            all.push({x: x, y: y, type: MoveType.Capture});
     } else {
-        //down-left
-        if(p.x > 0) {
-            for(y = p.y-1; y >= 0 && board[y][p.x-1] == NONE; y--)
-                all.push({x: p.x-1, y: y});
-            if(y >= 0 && pieces[board[y][p.x-1]]!.color != p.color)
-                all.push({x: p.x-1, y: y, type: MoveType.Capture});
-        }
-        //down-right
-        if(p.x < 7) {
-            for(y = p.y-1; y >= 0 && board[y][p.x+1] == NONE; y--)
-                all.push({x: p.x+1, y: y});
-            if(y >= 0 && pieces[board[y][p.x+1]]!.color != p.color)
-                all.push({x: p.x+1, y: y, type: MoveType.Capture});
-        }
+        //bottom left
+        for(x = p.x-1, y = p.y+1; x >= 0 && y < 8 && board[y][x] == NONE; x--, y++)
+            all.push({x: x, y: y});
+        if(x >= 0 && y < 8 && pieces[board[y][x]]!.color != p.color)
+            all.push({x: x, y: y, type: MoveType.Capture});
+        //bottom right
+        for(x = p.x+1, y = p.y+1; x < 8 && y < 8 && board[y][x] == NONE; x++, y++)
+            all.push({x: x, y: y});
+        if(x < 8 && y < 8 && pieces[board[y][x]]!.color != p.color)
+            all.push({x: x, y: y, type: MoveType.Capture});
     }
-
     return all;
 }
 
