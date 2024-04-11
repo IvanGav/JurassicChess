@@ -176,6 +176,8 @@ function _standardBoard(pieces: (ChessPiece|null)[]) {
 
 //JURASSIC CHESS:
 function _jurassicBoard(pieces: (ChessPiece|null)[]) {
+    promotionPiece = Piece.Dragon;
+
 	pieces.push({type: Piece.Triceratops, color: Color.White, x: 0, y: 0});
     pieces.push({type: Piece.Pterodactyl, color: Color.White, x: 1, y: 0});
     pieces.push({type: Piece.Rex, color: Color.White, x: 2, y: 0});

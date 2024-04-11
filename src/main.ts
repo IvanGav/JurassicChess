@@ -7,6 +7,7 @@ const AGREE_DRAW_ID = "agree_draw";
 const AGREE_DRAW_COUNT_ID = "agree_draw_count";
 const GAME_STATUS_ID = "game_status";
 const TURN_STATUS_ID = "turn_status";
+const MOVES_RECORD_ID = "moves";
 const PIECE_CLASS = "piece";
 const SELECTED_CLASS = "selected";
 
@@ -48,6 +49,7 @@ function initGame() {
 	placeMovesIndicatorsDiv();
 	putPieces();
 	updateBoardSize();
+	clearMoveRecord();
 	setCallbacks(/* on promotion: */ (piece: number) => {
 		removePiece(piece, document.getElementById(PIECES_DIV_ID)!);
 		addPiece(piece, document.getElementById(PIECES_DIV_ID)!);
@@ -319,6 +321,7 @@ function boardClicked(x: number, y: number) {
 	if(move != null) {
 		//can move to (x,y)
 		makeMove(selected, move.to);
+		recordMove(move);
 		setDrawStatus();
 		passTurnToNextPlayer();
 		updateTurnStatus();
@@ -424,4 +427,54 @@ function moveAvailable(move: Move): (Move|null) {
 		}
 	}
 	return null;
+}
+
+var rank = [1,2,3,4,5,6,7,8];
+var file = ["a","b","c","d","e","f","g","h"];
+var pieceLetter = [undefined, "","N","B","R","Q",/*,"K",*/"H","P","R","T","D"];
+/*
+enum Piece {
+	Pawn = 1,
+	Knight = 2,
+	Bishop = 3,
+	Rook = 4,
+	Queen = 5,
+	King  = 6,
+    //JURASSIC CHESS:
+    Pterodactyl = 7,
+    Rex = 8,
+    Triceratops = 9,
+    Dragon = 10,
+}
+*/
+
+//call after the move happens, but before the turn is passed to the next player
+function recordMove(move: Move) {
+	document.getElementById(MOVES_RECORD_ID)!.innerHTML += getMoveNotation(move) + "; ";
+}
+
+function clearMoveRecord() {
+	document.getElementById(MOVES_RECORD_ID)!.innerHTML = "";
+}
+
+function getMoveNotation(move: Move): string {
+	if(move.to.type == MoveType.ShortCastle) return "0-0";
+	if(move.to.type == MoveType.LongCastle) return "0-0-0";
+
+	let p = pieceAt(move.to)!;
+
+	let notation: string = "";
+
+	notation += pieceLetter[p.type];
+	notation += file[move.from.x];
+	notation += rank[move.from.y];
+	
+	if(move.to.type == MoveType.Capture || move.to.type == MoveType.EnPassant) notation += "x";
+
+	notation += file[move.to.x];
+	notation += rank[move.to.y];
+	
+	if(move.to.type == MoveType.Promotion) notation += pieceLetter[promotionPiece];
+
+	return notation;
 }
