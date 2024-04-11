@@ -78,7 +78,7 @@ function placeBoard() {
 
 //return a new board image
 function createBoard(): HTMLElement {
-	let image = getImg("https://assets-themes.chess.com/image/9rdwe/200.png", "board image", BOARD_ID, [], null);
+	let image = getImg("images/200.png", "board image", BOARD_ID, [], null);
 	image.addEventListener("click", getClickPosition, false);
 	return image;
 }
@@ -113,7 +113,7 @@ function removePiece(piece: number) {
 //get an img div with given arguments
 function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = null, classList: string[] = [], onClick: (null|(() => void)) = null, size: (string|null) = null): HTMLElement {
 	let image = document.createElement("img");
-	image.src = src; //i hate it, but i can just ignore the null 'src', it'll work just fine, ugh, my Java|Kotlin|C++|C brain hurts
+	image.src = src;
 	image.alt = ifLoadFails;
 	if(id != null) image.id = id;
 	if(classList.length > 0)
@@ -131,53 +131,71 @@ function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = 
 //get image for a specified piece and color
 function getPieceImage(piece: Piece, color: Color): string {
 	switch(piece) {
+		//NORMAL CHES:
 		case Piece.Pawn: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/bp.png";
+				// return "images/bp.png";
 				return "images/z_bv.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wp.png";
+				// return "images/wp.png";
 				return "images/z_wv.png";
 		}
 		case Piece.Knight: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/bn.png";
-				return "images/z_bp.png";
+				return "images/bn.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wn.png";
-				return "images/z_wp.png";
+				return "images/wn.png";
 		}
 		case Piece.Bishop: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/bb.png";
-				return "images/z_br.png";
+				return "images/bb.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wb.png";
-				return "images/z_wr.png";
+				return "images/wb.png";
 		}
 		case Piece.Rook: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/br.png";
-				return "images/z_bt.png";
+				return "images/br.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wr.png";
-				return "images/z_wt.png";
+				return "images/wr.png";
 		}
 		case Piece.Queen: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/bq.png";
-				return "images/z_bd.png";
+				return "images/bq.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wq.png";
-				return "images/z_wd.png";
+				return "images/wq.png";
 		}
 		case Piece.King: {
 			if(color == Color.Black)
-				// return "https://assets-themes.chess.com/image/ejgfv/150/bk.png";
+				// return "images/bk.png";
 				return "images/z_bh.png";
 			else
-				// return "https://assets-themes.chess.com/image/ejgfv/150/wk.png";
+				// return "images/wk.png";
 				return "images/z_wh.png";
+		}
+		//JURASSIC CHESS:
+		case Piece.Pterodactyl: {
+			if(color == Color.Black)
+				return "images/z_bp.png";
+			else
+				return "images/z_wp.png";
+		}
+		case Piece.Rex: {
+			if(color == Color.Black)
+				return "images/z_br.png";
+			else
+				return "images/z_wr.png";
+		}
+		case Piece.Triceratops: {
+			if(color == Color.Black)
+				return "images/z_bt.png";
+			else
+				return "images/z_wt.png";
+		}
+		case Piece.Dragon: {
+			if(color == Color.Black)
+				return "images/z_bd.png";
+			else
+				return "images/z_wd.png";
 		}
 	}
 }
@@ -242,7 +260,7 @@ function pieceClicked(piece: number) {
 
 //this function gets called for every square on board that's clicked
 function boardClicked(x: number, y: number) {
-	if(selected == NONE) return; //ERROR: comparing to null isntead of NONE
+	if(selected == NONE) return;
 	let s = pieces[selected]!;
 	let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: x, y: y}});
 	if(move != null) {
@@ -348,7 +366,7 @@ function getViewDirection(): Color {
 function moveAvailable(move: Move): (Move|null) {
 	for(let i = 0; i < moves.length; i++) {
 		let test = moves[i];
-		if(test.from.x == move.from.x && test.from.y == move.from.y && test.to.x == move.to.x && test.to.y == move.to.y) { //ERROR: the last condition was testing 'from' and not 'to'
+		if(test.from.x == move.from.x && test.from.y == move.from.y && test.to.x == move.to.x && test.to.y == move.to.y) {
 			return test;
 		}
 	}
