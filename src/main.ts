@@ -92,22 +92,8 @@ function placeBoard() {
 //return a new board image
 function createBoard(): HTMLElement {
 	let image = getImg("images/200.png", "board image", BOARD_ID, [], () => deselect());
-	// image.addEventListener("click", getClickPosition, false);
 	return image;
 }
-
-//gets called for every click on board
-// function getClickPosition(this: HTMLElement, ev: MouseEvent) {
-// 	updateBoardSize();
-// 	var x = Math.floor(ev.offsetX/CELL_SIZE);
-// 	var y = Math.floor(ev.offsetY/CELL_SIZE);
-//     if(getViewDirection() == Color.White) {
-//         y = 7 - y;
-//     } else {
-//         x = 7 - x;
-//     }
-// 	boardClicked(x, y);
-// }
 
 function placeMovesIndicatorsDiv() {
 	let moves_div = document.createElement("div");
@@ -228,21 +214,8 @@ function getPieceImage(piece: Piece, color: Color): string {
 }
 
 /*
-	gameplay functions
+	Gameplay update functions
 */
-
-//update the position of the html piece attached to this 'piece'
-function updatePiecePosition(piece: number) {
-	let htmlPiece = htmlPieces[piece];
-	let p = pieces[piece]!;
-	if(getViewDirection() == Color.White) {
-	    htmlPiece.style.left = `${p.x*8.75}vh`;
-		htmlPiece.style.top = `${(70 - (p.y + 1)*8.75)}vh`;
-    } else {
-	    htmlPiece.style.left = `${(70 - (p.x + 1)*8.75)}vh`;
-		htmlPiece.style.top = `${p.y*8.75}vh`;
-    }
-}
 
 function putMoveIndicators() {
 	if(selected == NONE) return;
@@ -269,24 +242,20 @@ function clearMoveIndicators() {
 	document.getElementById(MOVES_DIV_ID)!.innerHTML = "";
 }
 
-//deselect the currently selected (if any) piece (both html and variable)
-function deselect() {
-	if(selected != NONE) {
-		htmlPieces[selected].classList.remove("selected");
-	}
-	selected = NONE;
-	clearMoveIndicators();
+//update the position of the html piece attached to this 'piece'
+function updatePiecePosition(piece: number) {
+	let htmlPiece = htmlPieces[piece];
+	let p = pieces[piece]!;
+	if(getViewDirection() == Color.White) {
+	    htmlPiece.style.left = `${p.x*8.75}vh`;
+		htmlPiece.style.top = `${(70 - (p.y + 1)*8.75)}vh`;
+    } else {
+	    htmlPiece.style.left = `${(70 - (p.x + 1)*8.75)}vh`;
+		htmlPiece.style.top = `${p.y*8.75}vh`;
+    }
 }
 
-//select a piece (both html and variable) (deselect if anything is selected)
-function select(piece: number) {
-	deselect();
-	htmlPieces[piece].classList.add("selected");
-	selected = piece;
-	putMoveIndicators();
-}
-
-//will completely ignore captured pieces; fully update the state of the board
+//fully update the state of the board; will completely ignore captured pieces
 function updateBoard() {
 	putMoveIndicators();
 	for(let i = 0; i < pieces.length; i++) {
@@ -295,6 +264,10 @@ function updateBoard() {
 		}
 	}
 }
+
+/*
+	Dealing with piece/board clicks
+*/
 
 //this function gets called for every clicked piece
 function pieceClicked(piece: number) {
@@ -332,11 +305,10 @@ function boardClicked(x: number, y: number) {
 	deselect();
 }
 
-function passTurnToNextPlayer() {
-	nextTurn();
-	player++;
-	if(player == PLAYERS) player = 0;
-}
+
+/*
+	Update visible game/turn status
+*/
 
 function setDrawStatus() {
 	let isChecked = (document.getElementById(AGREE_DRAW_ID) as HTMLInputElement).checked;
@@ -418,6 +390,34 @@ function getViewDirection(): Color {
 	return viewDirection;
 }
 
+/*
+	Helper functions
+*/
+
+//deselect the currently selected (if any) piece (both html and variable)
+function deselect() {
+	if(selected != NONE) {
+		htmlPieces[selected].classList.remove("selected");
+	}
+	selected = NONE;
+	clearMoveIndicators();
+}
+
+//select a piece (both html and variable) (deselect if anything is selected)
+function select(piece: number) {
+	deselect();
+	htmlPieces[piece].classList.add("selected");
+	selected = piece;
+	putMoveIndicators();
+}
+
+//should be called instead of 'nextTurn'
+function passTurnToNextPlayer() {
+	nextTurn();
+	player++;
+	if(player == PLAYERS) player = 0;
+}
+
 //check if a move 'move' is available this turn; return the actual move to be taken (may change move.type field) or null if not available
 function moveAvailable(move: Move): (Move|null) {
 	for(let i = 0; i < moves.length; i++) {
@@ -429,34 +429,30 @@ function moveAvailable(move: Move): (Move|null) {
 	return null;
 }
 
+/*
+	Recording moves and retrieving recorded moves
+*/
+
 var rank = [1,2,3,4,5,6,7,8];
 var file = ["a","b","c","d","e","f","g","h"];
 var pieceLetter = [undefined, "","N","B","R","Q",/*,"K",*/"H","P","R","T","D"];
-/*
-enum Piece {
-	Pawn = 1,
-	Knight = 2,
-	Bishop = 3,
-	Rook = 4,
-	Queen = 5,
-	King  = 6,
-    //JURASSIC CHESS:
-    Pterodactyl = 7,
-    Rex = 8,
-    Triceratops = 9,
-    Dragon = 10,
-}
-*/
 
 //call after the move happens, but before the turn is passed to the next player
 function recordMove(move: Move) {
 	document.getElementById(MOVES_RECORD_ID)!.innerHTML += getMoveNotation(move) + "; ";
 }
 
+//overwrite current move record, if available, with a givent value
+function writeMoveRecord(moveRecord: string) {
+	document.getElementById(MOVES_RECORD_ID)!.innerHTML = moveRecord;
+}
+
+//clear move record, if available
 function clearMoveRecord() {
 	document.getElementById(MOVES_RECORD_ID)!.innerHTML = "";
 }
 
+//given a move, get its algebraic-like notation (must be called when 'moves' still has all legal moves for current player)
 function getMoveNotation(move: Move): string {
 	if(move.to.type == MoveType.ShortCastle) return "0-0";
 	if(move.to.type == MoveType.LongCastle) return "0-0-0";
