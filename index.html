@@ -5,39 +5,22 @@
 	</head>
 	<body>
 		<div>
-			<h2 class="center_text" id="title">Jurassic Chess</h2>
+			<h2 class="center_text" id="title">Chess</h2>
 		</div>
 		<div id="game_body">
 			<div id="board_section">
-				<div id="game_div">
-				</div>
+				<div id="game_div"></div>
 			</div>
 
-			<div id="side_section">
-				<row>
-					<p>
-						<text id="game_status">Game is not active</text>
-						<text> | </text>
-						<text id="turn_status">Start a new game</text>
-					</p>
-				</row>
-				
-				<button type="button" onclick="initGame()">New Game</button>
-				<button type="button" onclick="toggleViewDirection()">Flip</button>
-				<button type="button" onclick="lockViewDirection()">Don't Flip</button>
-				<button type="button" onclick="resetViewDirection()">Do Flip</button>
-				<input type="checkbox" id="agree_draw">
-				<label for="agree_draw">Agree to Draw</label>
-				<label id="agree_draw_count" for="agree_draw">(0/2)</label>
-
-				<hr>
-				<div id="moves"></div>
-			</div>
+			<div id="side_section"></div>
 		</div>
 
 		<script src="game.js"></script>
 		<script src="main.js"></script>
+		<script src="layout.js"></script>
 		<script>
+			setCallbacksMain(gameEnded);
+			replaceSideSection(getUIMainMenu());
 			//NORMAL CHESS:
 			// _standardBoard(pieces);
 			//JURASSIC CHESS:

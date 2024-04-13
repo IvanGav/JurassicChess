@@ -15,8 +15,6 @@ button:active {
 }
 #game_div { 
 	display: grid;
-	/* grid-template-rows: repeat(8, 8.75vh);
-	grid-template-columns: repeat(8, 8.75vh); */
 	max-width: 70vh;
 	max-height: 70vh;
 }

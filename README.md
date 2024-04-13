@@ -1,6 +1,12 @@
-# Jurassic Chess
+# Chess
 
-Jurassic chess variant. Don't expect it to be good, it's quite *prehistoric*.
+### v1
+
+Variants:
+- Normal Chess - Boring old chess. Go play on lichess if that's what you're playing.
+- Jurassic Chess - Don't expect it to be good, it's quite *prehistoric*.
+
+Feel free to submit any bugs, I'd appreciate. I plan to work on it a bit more. BUG_REPORT.md will additionally contain all bug records.
 
 Written in Typescript (ts). To compile ts files, you can use `./mk.bash`. 
 Generated Javascript (js) files will be put into the home directory, together with "index.html". 
@@ -13,7 +19,6 @@ This is a "tsconfig.json" file that works for me:
 ```json
 {
 	"compilerOptions": {
-		"outDir": "./dist/",
 		"noImplicitAny": true,
 		"module": "es6",
 		"target": "es5",
@@ -27,6 +32,16 @@ This is a "tsconfig.json" file that works for me:
 
 For now, "index.html" loads js scripts in the head without any extra import/export. It's probably going to stay this way, because oh god modules for web pages are a pain to figure out for the first time.
 
-So, it's normal chess. Nothing more nothing less. Needs more polishing and testing.
+Code is somewhat well self documented, but if something is not clear, open an issue and I'll write better code/comments (It sucks, I know. Fortunately most of it shouldn't need to be touched again before a big overhaul).
 
-The plan is to make it playable on the same computer, then on a server (not even sure if it's going to happen).
+Plans (no order):
+- Timer
+- Too quiet.
+- Play vs AI
+- Live replay
+- Server support
+- Design overhaul
+- How to play pages
+- Support for easy and flexible variant creation
+- A new chess variant that nobody seems to know about...
+- Lore update?...

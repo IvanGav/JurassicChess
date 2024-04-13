@@ -1,3 +1,5 @@
+//TODO: update title based on a variant
+
 const GAME_DIV_ID = "game_div";
 const BOARD_DIV_ID = "board_div";
 const MOVES_DIV_ID = "moves_div";
@@ -14,14 +16,14 @@ const SELECTED_CLASS = "selected";
 // const PLAYERS = 7;
 // const DRAW_VOTE_REQUIRED = 5; //5 out of 7 people have to vote for the game to be a draw
 
-const PLAYERS = 2;
-const DRAW_VOTE_REQUIRED = 2;
+var VARIANT_CURRENT = -1;
+
+var PLAYERS = 2;
+var DRAW_VOTE_REQUIRED = 2;
+var BOARD_CELLS = 8;
 
 var BOARD_SIZE = 600;
-var CELL_SIZE = BOARD_SIZE/8;
-
-var screenHeight = window.innerHeight;
-var screenWidth = window.innerWidth;
+var CELL_SIZE = BOARD_SIZE/BOARD_CELLS;
 
 //of view_direction is not null, it overwrites the 'turn' view
 var viewDirection: (Color|null) = null;
@@ -37,31 +39,42 @@ var playersDrawAgreedCount: number = 0;
 var timeControl: number = 300; //inital time; in seconds
 var timeBonus: number = 3; //added with each turn; in seconds
 
+//callbacks
+var gameEndCallback: ()=>void;
+
 /*
 	board initialization functions
 */
 
+function setCallbacksMain(gameEndCallBack: (()=>void)) {
+	gameEndCallback = gameEndCallBack;
+}
+
 //init game
-function initGame() {
+function initGame(variant: number) {
 	removeBoard();
-	initBoard();
+	initBoard(variant);
+	VARIANT_CURRENT = variant;
+
 	placeBoard();
 	placeMovesIndicatorsDiv();
 	putPieces();
+
 	updateBoardSize();
 	clearMoveRecord();
-	setCallbacks(/* on promotion: */ (piece: number) => {
+	updateTurnStatus();
+
+	setCallbacksGame(/* on promotion: */ (piece: number) => {
 		removePiece(piece, document.getElementById(PIECES_DIV_ID)!);
 		addPiece(piece, document.getElementById(PIECES_DIV_ID)!);
-    }, /* on capture: */ (piece: number) => {
+	}, /* on capture: */ (piece: number) => {
 		removePiece(piece, document.getElementById(PIECES_DIV_ID)!);
-    });
+	});
+
 	moves = allMoves();
-	updateTurnStatus();
-	updateGameStatusGameActive();
+	viewDirection = null;
 	player = 0;
 	playersDrawAgreedCount = 0;
-	//init player variables
 	timers = [];
 	playersDrawAgreed = [];
 	for(let i = 0; i < PLAYERS; i++) {
@@ -71,7 +84,7 @@ function initGame() {
 }
 
 function removeBoard() {
-	document.getElementById(GAME_DIV_ID)!.replaceChildren();
+	document.getElementById(GAME_DIV_ID)!.innerHTML = "";
 
 }
 
@@ -234,25 +247,28 @@ function putMoveIndicators() {
 			moveIndicator.style.left = `${(70 - (moves[i].to.x + 1)*8.75)}vh`;
 			moveIndicator.style.top = `${moves[i].to.y*8.75}vh`;
 		}
-		document.getElementById(MOVES_DIV_ID)!.appendChild(moveIndicator);
+		document.getElementById(MOVES_DIV_ID)?.appendChild(moveIndicator);
 	}
 }
 
 function clearMoveIndicators() {
-	document.getElementById(MOVES_DIV_ID)!.innerHTML = "";
+	let moveDiv = document.getElementById(MOVES_DIV_ID);
+	if(moveDiv == null) return;
+	moveDiv.innerHTML = "";
 }
 
-//update the position of the html piece attached to this 'piece'
+//update the position of the html piece attached to 'piece'
 function updatePiecePosition(piece: number) {
+	clearMoveIndicators();
 	let htmlPiece = htmlPieces[piece];
 	let p = pieces[piece]!;
 	if(getViewDirection() == Color.White) {
-	    htmlPiece.style.left = `${p.x*8.75}vh`;
+		htmlPiece.style.left = `${p.x*8.75}vh`;
 		htmlPiece.style.top = `${(70 - (p.y + 1)*8.75)}vh`;
-    } else {
-	    htmlPiece.style.left = `${(70 - (p.x + 1)*8.75)}vh`;
+	} else {
+		htmlPiece.style.left = `${(70 - (p.x + 1)*8.75)}vh`;
 		htmlPiece.style.top = `${p.y*8.75}vh`;
-    }
+	}
 }
 
 //fully update the state of the board; will completely ignore captured pieces
@@ -293,8 +309,8 @@ function boardClicked(x: number, y: number) {
 	let move = moveAvailable({from: {x: s.x, y: s.y}, to: {x: x, y: y}});
 	if(move != null) {
 		//can move to (x,y)
-		makeMove(selected, move.to);
 		recordMove(move);
+		makeMove(selected, move.to);
 		setDrawStatus();
 		passTurnToNextPlayer();
 		updateTurnStatus();
@@ -310,8 +326,11 @@ function boardClicked(x: number, y: number) {
 	Update visible game/turn status
 */
 
+//display draw choice of currently playing player
 function setDrawStatus() {
-	let isChecked = (document.getElementById(AGREE_DRAW_ID) as HTMLInputElement).checked;
+	let checkmark = document.getElementById(AGREE_DRAW_ID);
+	// if(checkmark == null) return;
+	let isChecked = (checkmark as HTMLInputElement).checked;
 	if(isChecked != playersDrawAgreed[player]) {
 		playersDrawAgreedCount += isChecked ? 1 : -1;
 		playersDrawAgreed[player] = isChecked;
@@ -324,45 +343,33 @@ function updateTurnStatus() {
 	document.getElementById(AGREE_DRAW_COUNT_ID)!.innerHTML = `(${playersDrawAgreedCount}/${PLAYERS})`;
 }
 
-function updateTurnStatusGameEnded() {
-	document.getElementById(TURN_STATUS_ID)!.innerText = "Start a new game";
-}
-
-function updateGameStatusGameActive() {
-	document.getElementById(GAME_STATUS_ID)!.innerText = "Game is active";
-}
-
-function updateGameStatusGameInactive() {
-	document.getElementById(GAME_STATUS_ID)!.innerText = "Game is not active";
-}
-
 //call instead of updateGameState(moves)
 function updateGameStatus() {
 	if(updateGameState(moves, playersDrawAgreedCount >= DRAW_VOTE_REQUIRED)) {
 		//if the game has ended
-		if(gameState == GameState.Brutality) {
-			document.getElementById(GAME_STATUS_ID)!.innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
-		} else if(gameState == GameState.Checkmate) {
-			document.getElementById(GAME_STATUS_ID)!.innerText = (winner == Color.White ? "White has won" : "Black has won");
-		} else if(gameState == GameState.Stalemate) {
-			document.getElementById(GAME_STATUS_ID)!.innerText = "Stalemate";
-		} else if(gameState == GameState.InsufficientMaterial) {
-			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by insufficient material";
-		} else if(gameState == GameState.AgreedDraw) {
-			document.getElementById(GAME_STATUS_ID)!.innerText = "Draw by agreement";
+		let message: string;
+		switch(gameState) {
+			case GameState.AgreedDraw:				{ message = "Draw by agreement"; break; }
+			case GameState.Brutality:				{ message = (winner == Color.White ? "White has demolished Black" : "Black has demolished White"); break; }
+			case GameState.Checkmate:				{ message = (winner == Color.White ? "White has won" : "Black has won"); break; }
+			case GameState.Going:					{ message = "ERROR: game is still going"; break; }
+			case GameState.InsufficientMaterial:	{ message = "Draw by insufficient material"; break; }
+			case GameState.None:					{ message = "ERROR: game is not active"; break; }
+			case GameState.Stalemate:				{ message = "Stalemate"; break; }
 		}
-		updateTurnStatusGameEnded();
+		gameEndCallback();
+		setGameStatus(message);
 	}
 }
 
-//currently playing side is resigning
-function playerDrawAgree(player: number) {
-	playersDrawAgreed[player] = true;
+function setGameStatus(message: string) {
+	let status = document.getElementById(GAME_STATUS_ID);
+	if(status == null) return;
+	status.innerText = message;
 }
 
-//currently playing side is resigning
-function playerDrawDisgree(player: number) {
-	playersDrawAgreed[player] = false;
+function setPlayerDrawOffer(player: number, offeringDraw: boolean) {
+	playersDrawAgreed[player] = offeringDraw;
 }
 
 /*
@@ -442,6 +449,12 @@ function recordMove(move: Move) {
 	document.getElementById(MOVES_RECORD_ID)!.innerHTML += getMoveNotation(move) + "; ";
 }
 
+function getMoveRecord(): string {
+	let moves_div = document.getElementById(MOVES_RECORD_ID);
+	if(moves_div == null) return "ERROR: moves div doesn't exist";
+	return moves_div.innerHTML;
+}
+
 //overwrite current move record, if available, with a givent value
 function writeMoveRecord(moveRecord: string) {
 	document.getElementById(MOVES_RECORD_ID)!.innerHTML = moveRecord;
@@ -452,12 +465,13 @@ function clearMoveRecord() {
 	document.getElementById(MOVES_RECORD_ID)!.innerHTML = "";
 }
 
-//given a move, get its algebraic-like notation (must be called when 'moves' still has all legal moves for current player)
+//given a move, get its algebraic-like notation (must be called before the move is made)
 function getMoveNotation(move: Move): string {
 	if(move.to.type == MoveType.ShortCastle) return "0-0";
 	if(move.to.type == MoveType.LongCastle) return "0-0-0";
 
-	let p = pieceAt(move.to)!;
+	let p = pieceAt(move.from);
+	if(p == null) return "ERROR: moved piece doesn't exist";
 
 	let notation: string = "";
 
@@ -470,7 +484,10 @@ function getMoveNotation(move: Move): string {
 	notation += file[move.to.x];
 	notation += rank[move.to.y];
 	
-	if(move.to.type == MoveType.Promotion) notation += pieceLetter[promotionPiece];
+	if(move.to.promotion_to != undefined) {
+		notation += pieceLetter[move.to.promotion_to];
+		// notation.substring(1);
+	}
 
 	return notation;
 }
