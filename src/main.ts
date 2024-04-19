@@ -1,5 +1,3 @@
-//TODO: update title based on a variant
-
 const GAME_DIV_ID = "game_div";
 const BOARD_DIV_ID = "board_div";
 const MOVES_DIV_ID = "moves_div";
@@ -55,6 +53,12 @@ function initGame(variant: number) {
 	removeBoard();
 	initBoard(variant);
 	VARIANT_CURRENT = variant;
+	
+	viewDirection = null;
+	player = 0;
+	playersDrawAgreedCount = 0;
+	timers = [];
+	playersDrawAgreed = [];
 
 	placeBoard();
 	placeMovesIndicatorsDiv();
@@ -72,11 +76,6 @@ function initGame(variant: number) {
 	});
 
 	moves = allMoves();
-	viewDirection = null;
-	player = 0;
-	playersDrawAgreedCount = 0;
-	timers = [];
-	playersDrawAgreed = [];
 	for(let i = 0; i < PLAYERS; i++) {
 		timers.push(timeControl*1000);
 		playersDrawAgreed.push(false);
@@ -125,7 +124,7 @@ function putPieces() {
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
 function addPiece(piece: number, board: HTMLElement) {
 	let p = pieces[piece]!;
-	let htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
+	let htmlPiece = getImg(getPieceImage(p.type, p.color, p._customModel), "chess_piece", piece.toString(10), ["piece"], () => pieceClicked(piece));
 	htmlPieces[piece] = htmlPiece;
 	updatePiecePosition(piece);
 	board.appendChild(htmlPiece);
@@ -155,16 +154,28 @@ function getImg(src: string, ifLoadFails: string = "image", id: (string|null) = 
 }
 
 //get image for a specified piece and color
-function getPieceImage(piece: Piece, color: Color): string {
-	switch(piece) {
-		//NORMAL CHES:
-		case Piece.Pawn: {
+function getPieceImage(piece: Piece, color: Color, customModel: CustomModel|undefined): string {
+	switch(customModel) {
+		case undefined: break;
+		case CustomModel.BeastHandler: {
 			if(color == Color.Black)
-				// return "images/bp.png";
+				return "images/z_bh.png";
+			else
+				return "images/z_wh.png";
+		}
+		case CustomModel.Veloceraptor: {
+			if(color == Color.Black)
 				return "images/z_bv.png";
 			else
-				// return "images/wp.png";
 				return "images/z_wv.png";
+		}
+	}
+	switch(piece) {
+		case Piece.Pawn: {
+			if(color == Color.Black)
+				return "images/bp.png";
+			else
+				return "images/wp.png";
 		}
 		case Piece.Knight: {
 			if(color == Color.Black)
@@ -192,13 +203,10 @@ function getPieceImage(piece: Piece, color: Color): string {
 		}
 		case Piece.King: {
 			if(color == Color.Black)
-				// return "images/bk.png";
-				return "images/z_bh.png";
+				return "images/bk.png";
 			else
-				// return "images/wk.png";
-				return "images/z_wh.png";
+				return "images/wk.png";
 		}
-		//JURASSIC CHESS:
 		case Piece.Pterodactyl: {
 			if(color == Color.Black)
 				return "images/z_bp.png";
@@ -442,7 +450,8 @@ function moveAvailable(move: Move): (Move|null) {
 
 var rank = [1,2,3,4,5,6,7,8];
 var file = ["a","b","c","d","e","f","g","h"];
-var pieceLetter = [undefined, "","N","B","R","Q",/*,"K",*/"H","P","R","T","D"];
+var pieceLetter = [undefined, "","N","B","R","Q","K","P","R","T","D"];
+var customModelLetter = ["", "H"];
 
 //call after the move happens, but before the turn is passed to the next player
 function recordMove(move: Move) {
@@ -475,7 +484,10 @@ function getMoveNotation(move: Move): string {
 
 	let notation: string = "";
 
-	notation += pieceLetter[p.type];
+	if(p._customModel == undefined)
+		notation += pieceLetter[p.type];
+	else
+		notation += customModelLetter[p._customModel];
 	notation += file[move.from.x];
 	notation += rank[move.from.y];
 	

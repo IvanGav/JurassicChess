@@ -10,16 +10,16 @@ function replaceSideSection(div) {
     doc.innerHTML = div;
 }
 function getUIMainMenu() {
-    return "\n        <p>\n            <text>Start a new game:</text>\n        </p>\n\n        <button type=\"button\" onclick=\"startGame(VARIANT_NORMAL)\">Play Normal Chess</button>\n        <button type=\"button\" onclick=\"startGame(VARIANT_JURASSIC)\">Play Jurassic Chess</button>";
+    return "\n\t\t<p>\n\t\t\t<text>Start a new game:</text>\n\t\t</p>\n\n\t\t<button type=\"button\" onclick=\"startGame(VARIANT_NORMAL)\">Play Normal Chess</button>\n\t\t<button type=\"button\" onclick=\"startGame(VARIANT_JURASSIC)\">Play Jurassic Chess</button>";
 }
 function getUIGameActive() {
-    return "\n    <p>\n        <text id=\"turn_status\"></text>\n    </p>\n\n    <button type=\"button\" onclick=\"toggleViewDirection()\">Flip</button>\n    <button type=\"button\" onclick=\"lockViewDirection()\">Don't Flip</button>\n    <button type=\"button\" onclick=\"resetViewDirection()\">Do Flip</button>\n    <input type=\"checkbox\" id=\"agree_draw\">\n        <label for=\"agree_draw\">Agree to Draw</label>\n        <label id=\"agree_draw_count\" for=\"agree_draw\">(0/2)</label>\n\n    <hr>\n    <div id=\"moves\"></div>";
+    return "\n\t<p>\n\t\t<text id=\"turn_status\"></text>\n\t</p>\n\n\t<button type=\"button\" onclick=\"toggleViewDirection()\">Flip</button>\n\t<button type=\"button\" onclick=\"lockViewDirection()\">Don't Flip</button>\n\t<button type=\"button\" onclick=\"resetViewDirection()\">Do Flip</button>\n\t<input type=\"checkbox\" id=\"agree_draw\">\n\t\t<label for=\"agree_draw\">Agree to Draw</label>\n\t\t<label id=\"agree_draw_count\" for=\"agree_draw\">(0/2)</label>\n\n\t<hr>\n\t<div id=\"moves\"></div>";
 }
 function getUIGameOver() {
-    return "\n    <p>\n        <text id=\"game_status\"></text>\n    </p>\n\n    <button type=\"button\" onclick=\"playAgain()\">Play Again</button>\n    <button type=\"button\" onclick=\"mainMenu()\">Main Menu</button>\n    <button type=\"button\" onclick=\"analyzeCurrent()\">Analyze</button>\n\n    <hr>\n    <div id=\"moves\"></div>";
+    return "\n\t<p>\n\t\t<text id=\"game_status\"></text>\n\t</p>\n\n\t<button type=\"button\" onclick=\"playAgain()\">Play Again</button>\n\t<button type=\"button\" onclick=\"mainMenu()\">Main Menu</button>\n\t<button type=\"button\" onclick=\"analyzeCurrent()\">Analyze</button>\n\n\t<hr>\n\t<div id=\"moves\"></div>";
 }
 function getUIReplay() {
-    return "\n    <p>\n        <text>Replay</text>\n    </p>\n\n    <button type=\"button\" onclick=\"mainMenu()\">Main Menu</button>\n\n    <hr>\n    <div id=\"moves\"></div>";
+    return "\n\t<p>\n\t\t<text>Replay</text>\n\t</p>\n\n\t<button type=\"button\" onclick=\"mainMenu()\">Main Menu</button>\n\n\t<hr>\n\t<div id=\"moves\"></div>";
 }
 /*
     shorthand functions
