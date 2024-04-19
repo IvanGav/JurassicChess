@@ -12,12 +12,12 @@ var PIECE_CLASS = "piece";
 var SELECTED_CLASS = "selected";
 // const PLAYERS = 7;
 // const DRAW_VOTE_REQUIRED = 5; //5 out of 7 people have to vote for the game to be a draw
+var VARIANT_CURRENT = -1;
 var PLAYERS = 2;
 var DRAW_VOTE_REQUIRED = 2;
+var BOARD_CELLS = 8;
 var BOARD_SIZE = 600;
-var CELL_SIZE = BOARD_SIZE / 8;
-var screenHeight = window.innerHeight;
-var screenWidth = window.innerWidth;
+var CELL_SIZE = BOARD_SIZE / BOARD_CELLS;
 //of view_direction is not null, it overwrites the 'turn' view
 var viewDirection = null;
 var htmlPieces = [];
@@ -29,39 +29,44 @@ var playersDrawAgreed = [];
 var playersDrawAgreedCount = 0;
 var timeControl = 300; //inital time; in seconds
 var timeBonus = 3; //added with each turn; in seconds
+//callbacks
+var gameEndCallback;
 /*
     board initialization functions
 */
+function setCallbacksMain(gameEndCallBack) {
+    gameEndCallback = gameEndCallBack;
+}
 //init game
-function initGame() {
+function initGame(variant) {
     removeBoard();
-    initBoard();
+    initBoard(variant);
+    VARIANT_CURRENT = variant;
+    viewDirection = null;
+    player = 0;
+    playersDrawAgreedCount = 0;
+    timers = [];
+    playersDrawAgreed = [];
     placeBoard();
     placeMovesIndicatorsDiv();
     putPieces();
     updateBoardSize();
     clearMoveRecord();
-    setCallbacks(/* on promotion: */ function (piece) {
+    updateTurnStatus();
+    setCallbacksGame(/* on promotion: */ function (piece) {
         removePiece(piece, document.getElementById(PIECES_DIV_ID));
         addPiece(piece, document.getElementById(PIECES_DIV_ID));
     }, /* on capture: */ function (piece) {
         removePiece(piece, document.getElementById(PIECES_DIV_ID));
     });
     moves = allMoves();
-    updateTurnStatus();
-    updateGameStatusGameActive();
-    player = 0;
-    playersDrawAgreedCount = 0;
-    //init player variables
-    timers = [];
-    playersDrawAgreed = [];
     for (var i = 0; i < PLAYERS; i++) {
         timers.push(timeControl * 1000);
         playersDrawAgreed.push(false);
     }
 }
 function removeBoard() {
-    document.getElementById(GAME_DIV_ID).replaceChildren();
+    document.getElementById(GAME_DIV_ID).innerHTML = "";
 }
 function updateBoardSize() {
     var _a;
@@ -80,21 +85,8 @@ function placeBoard() {
 //return a new board image
 function createBoard() {
     var image = getImg("images/200.png", "board image", BOARD_ID, [], function () { return deselect(); });
-    // image.addEventListener("click", getClickPosition, false);
     return image;
 }
-//gets called for every click on board
-// function getClickPosition(this: HTMLElement, ev: MouseEvent) {
-// 	updateBoardSize();
-// 	var x = Math.floor(ev.offsetX/CELL_SIZE);
-// 	var y = Math.floor(ev.offsetY/CELL_SIZE);
-//     if(getViewDirection() == Color.White) {
-//         y = 7 - y;
-//     } else {
-//         x = 7 - x;
-//     }
-// 	boardClicked(x, y);
-// }
 function placeMovesIndicatorsDiv() {
     var moves_div = document.createElement("div");
     moves_div.id = MOVES_DIV_ID;
@@ -110,7 +102,7 @@ function putPieces() {
 //add a piece html to the board and set the 'htmlPiece' property of 'piece' (on click it the html piece will update the 'selected' variable)
 function addPiece(piece, board) {
     var p = pieces[piece];
-    var htmlPiece = getImg(getPieceImage(p.type, p.color), "chess_piece", piece.toString(10), ["piece"], function () { return pieceClicked(piece); });
+    var htmlPiece = getImg(getPieceImage(p.type, p.color, p._customModel), "chess_piece", piece.toString(10), ["piece"], function () { return pieceClicked(piece); });
     htmlPieces[piece] = htmlPiece;
     updatePiecePosition(piece);
     board.appendChild(htmlPiece);
@@ -143,16 +135,28 @@ function getImg(src, ifLoadFails, id, classList, onClick, size) {
     return image;
 }
 //get image for a specified piece and color
-function getPieceImage(piece, color) {
-    switch (piece) {
-        //NORMAL CHES:
-        case Piece.Pawn: {
+function getPieceImage(piece, color, customModel) {
+    switch (customModel) {
+        case undefined: break;
+        case CustomModel.BeastHandler: {
             if (color == Color.Black)
-                // return "images/bp.png";
+                return "images/z_bh.png";
+            else
+                return "images/z_wh.png";
+        }
+        case CustomModel.Veloceraptor: {
+            if (color == Color.Black)
                 return "images/z_bv.png";
             else
-                // return "images/wp.png";
                 return "images/z_wv.png";
+        }
+    }
+    switch (piece) {
+        case Piece.Pawn: {
+            if (color == Color.Black)
+                return "images/bp.png";
+            else
+                return "images/wp.png";
         }
         case Piece.Knight: {
             if (color == Color.Black)
@@ -180,13 +184,10 @@ function getPieceImage(piece, color) {
         }
         case Piece.King: {
             if (color == Color.Black)
-                // return "images/bk.png";
-                return "images/z_bh.png";
+                return "images/bk.png";
             else
-                // return "images/wk.png";
-                return "images/z_wh.png";
+                return "images/wk.png";
         }
-        //JURASSIC CHESS:
         case Piece.Pterodactyl: {
             if (color == Color.Black)
                 return "images/z_bp.png";
@@ -214,22 +215,10 @@ function getPieceImage(piece, color) {
     }
 }
 /*
-    gameplay functions
+    Gameplay update functions
 */
-//update the position of the html piece attached to this 'piece'
-function updatePiecePosition(piece) {
-    var htmlPiece = htmlPieces[piece];
-    var p = pieces[piece];
-    if (getViewDirection() == Color.White) {
-        htmlPiece.style.left = "".concat(p.x * 8.75, "vh");
-        htmlPiece.style.top = "".concat((70 - (p.y + 1) * 8.75), "vh");
-    }
-    else {
-        htmlPiece.style.left = "".concat((70 - (p.x + 1) * 8.75), "vh");
-        htmlPiece.style.top = "".concat(p.y * 8.75, "vh");
-    }
-}
 function putMoveIndicators() {
+    var _a;
     if (selected == NONE)
         return;
     var p = pieces[selected];
@@ -249,31 +238,33 @@ function putMoveIndicators() {
             moveIndicator.style.left = "".concat((70 - (moves[i].to.x + 1) * 8.75), "vh");
             moveIndicator.style.top = "".concat(moves[i].to.y * 8.75, "vh");
         }
-        document.getElementById(MOVES_DIV_ID).appendChild(moveIndicator);
+        (_a = document.getElementById(MOVES_DIV_ID)) === null || _a === void 0 ? void 0 : _a.appendChild(moveIndicator);
     };
     for (var i = 0; i < moves.length; i++) {
         _loop_1(i);
     }
 }
 function clearMoveIndicators() {
-    document.getElementById(MOVES_DIV_ID).innerHTML = "";
+    var moveDiv = document.getElementById(MOVES_DIV_ID);
+    if (moveDiv == null)
+        return;
+    moveDiv.innerHTML = "";
 }
-//deselect the currently selected (if any) piece (both html and variable)
-function deselect() {
-    if (selected != NONE) {
-        htmlPieces[selected].classList.remove("selected");
-    }
-    selected = NONE;
+//update the position of the html piece attached to 'piece'
+function updatePiecePosition(piece) {
     clearMoveIndicators();
+    var htmlPiece = htmlPieces[piece];
+    var p = pieces[piece];
+    if (getViewDirection() == Color.White) {
+        htmlPiece.style.left = "".concat(p.x * 8.75, "vh");
+        htmlPiece.style.top = "".concat((70 - (p.y + 1) * 8.75), "vh");
+    }
+    else {
+        htmlPiece.style.left = "".concat((70 - (p.x + 1) * 8.75), "vh");
+        htmlPiece.style.top = "".concat(p.y * 8.75, "vh");
+    }
 }
-//select a piece (both html and variable) (deselect if anything is selected)
-function select(piece) {
-    deselect();
-    htmlPieces[piece].classList.add("selected");
-    selected = piece;
-    putMoveIndicators();
-}
-//will completely ignore captured pieces; fully update the state of the board
+//fully update the state of the board; will completely ignore captured pieces
 function updateBoard() {
     putMoveIndicators();
     for (var i = 0; i < pieces.length; i++) {
@@ -282,6 +273,9 @@ function updateBoard() {
         }
     }
 }
+/*
+    Dealing with piece/board clicks
+*/
 //this function gets called for every clicked piece
 function pieceClicked(piece) {
     if (gameState != GameState.Going)
@@ -309,8 +303,8 @@ function boardClicked(x, y) {
     var move = moveAvailable({ from: { x: s.x, y: s.y }, to: { x: x, y: y } });
     if (move != null) {
         //can move to (x,y)
-        makeMove(selected, move.to);
         recordMove(move);
+        makeMove(selected, move.to);
         setDrawStatus();
         passTurnToNextPlayer();
         updateTurnStatus();
@@ -320,14 +314,14 @@ function boardClicked(x, y) {
     }
     deselect();
 }
-function passTurnToNextPlayer() {
-    nextTurn();
-    player++;
-    if (player == PLAYERS)
-        player = 0;
-}
+/*
+    Update visible game/turn status
+*/
+//display draw choice of currently playing player
 function setDrawStatus() {
-    var isChecked = document.getElementById(AGREE_DRAW_ID).checked;
+    var checkmark = document.getElementById(AGREE_DRAW_ID);
+    // if(checkmark == null) return;
+    var isChecked = checkmark.checked;
     if (isChecked != playersDrawAgreed[player]) {
         playersDrawAgreedCount += isChecked ? 1 : -1;
         playersDrawAgreed[player] = isChecked;
@@ -338,44 +332,53 @@ function updateTurnStatus() {
     document.getElementById(AGREE_DRAW_ID).checked = playersDrawAgreed[player];
     document.getElementById(AGREE_DRAW_COUNT_ID).innerHTML = "(".concat(playersDrawAgreedCount, "/").concat(PLAYERS, ")");
 }
-function updateTurnStatusGameEnded() {
-    document.getElementById(TURN_STATUS_ID).innerText = "Start a new game";
-}
-function updateGameStatusGameActive() {
-    document.getElementById(GAME_STATUS_ID).innerText = "Game is active";
-}
-function updateGameStatusGameInactive() {
-    document.getElementById(GAME_STATUS_ID).innerText = "Game is not active";
-}
 //call instead of updateGameState(moves)
 function updateGameStatus() {
     if (updateGameState(moves, playersDrawAgreedCount >= DRAW_VOTE_REQUIRED)) {
         //if the game has ended
-        if (gameState == GameState.Brutality) {
-            document.getElementById(GAME_STATUS_ID).innerText = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
+        var message = void 0;
+        switch (gameState) {
+            case GameState.AgreedDraw: {
+                message = "Draw by agreement";
+                break;
+            }
+            case GameState.Brutality: {
+                message = (winner == Color.White ? "White has demolished Black" : "Black has demolished White");
+                break;
+            }
+            case GameState.Checkmate: {
+                message = (winner == Color.White ? "White has won" : "Black has won");
+                break;
+            }
+            case GameState.Going: {
+                message = "ERROR: game is still going";
+                break;
+            }
+            case GameState.InsufficientMaterial: {
+                message = "Draw by insufficient material";
+                break;
+            }
+            case GameState.None: {
+                message = "ERROR: game is not active";
+                break;
+            }
+            case GameState.Stalemate: {
+                message = "Stalemate";
+                break;
+            }
         }
-        else if (gameState == GameState.Checkmate) {
-            document.getElementById(GAME_STATUS_ID).innerText = (winner == Color.White ? "White has won" : "Black has won");
-        }
-        else if (gameState == GameState.Stalemate) {
-            document.getElementById(GAME_STATUS_ID).innerText = "Stalemate";
-        }
-        else if (gameState == GameState.InsufficientMaterial) {
-            document.getElementById(GAME_STATUS_ID).innerText = "Draw by insufficient material";
-        }
-        else if (gameState == GameState.AgreedDraw) {
-            document.getElementById(GAME_STATUS_ID).innerText = "Draw by agreement";
-        }
-        updateTurnStatusGameEnded();
+        gameEndCallback();
+        setGameStatus(message);
     }
 }
-//currently playing side is resigning
-function playerDrawAgree(player) {
-    playersDrawAgreed[player] = true;
+function setGameStatus(message) {
+    var status = document.getElementById(GAME_STATUS_ID);
+    if (status == null)
+        return;
+    status.innerText = message;
 }
-//currently playing side is resigning
-function playerDrawDisgree(player) {
-    playersDrawAgreed[player] = false;
+function setPlayerDrawOffer(player, offeringDraw) {
+    playersDrawAgreed[player] = offeringDraw;
 }
 /*
     board orientation functions
@@ -397,6 +400,31 @@ function getViewDirection() {
         return turn;
     return viewDirection;
 }
+/*
+    Helper functions
+*/
+//deselect the currently selected (if any) piece (both html and variable)
+function deselect() {
+    if (selected != NONE) {
+        htmlPieces[selected].classList.remove("selected");
+    }
+    selected = NONE;
+    clearMoveIndicators();
+}
+//select a piece (both html and variable) (deselect if anything is selected)
+function select(piece) {
+    deselect();
+    htmlPieces[piece].classList.add("selected");
+    selected = piece;
+    putMoveIndicators();
+}
+//should be called instead of 'nextTurn'
+function passTurnToNextPlayer() {
+    nextTurn();
+    player++;
+    if (player == PLAYERS)
+        player = 0;
+}
 //check if a move 'move' is available this turn; return the actual move to be taken (may change move.type field) or null if not available
 function moveAvailable(move) {
     for (var i = 0; i < moves.length; i++) {
@@ -407,46 +435,54 @@ function moveAvailable(move) {
     }
     return null;
 }
+/*
+    Recording moves and retrieving recorded moves
+*/
 var rank = [1, 2, 3, 4, 5, 6, 7, 8];
 var file = ["a", "b", "c", "d", "e", "f", "g", "h"];
-var pieceLetter = [undefined, "", "N", "B", "R", "Q", /*,"K",*/ "H", "P", "R", "T", "D"];
-/*
-enum Piece {
-    Pawn = 1,
-    Knight = 2,
-    Bishop = 3,
-    Rook = 4,
-    Queen = 5,
-    King  = 6,
-    //JURASSIC CHESS:
-    Pterodactyl = 7,
-    Rex = 8,
-    Triceratops = 9,
-    Dragon = 10,
-}
-*/
+var pieceLetter = [undefined, "", "N", "B", "R", "Q", "K", "P", "R", "T", "D"];
+var customModelLetter = ["", "H"];
 //call after the move happens, but before the turn is passed to the next player
 function recordMove(move) {
     document.getElementById(MOVES_RECORD_ID).innerHTML += getMoveNotation(move) + "; ";
 }
+function getMoveRecord() {
+    var moves_div = document.getElementById(MOVES_RECORD_ID);
+    if (moves_div == null)
+        return "ERROR: moves div doesn't exist";
+    return moves_div.innerHTML;
+}
+//overwrite current move record, if available, with a givent value
+function writeMoveRecord(moveRecord) {
+    document.getElementById(MOVES_RECORD_ID).innerHTML = moveRecord;
+}
+//clear move record, if available
 function clearMoveRecord() {
     document.getElementById(MOVES_RECORD_ID).innerHTML = "";
 }
+//given a move, get its algebraic-like notation (must be called before the move is made)
 function getMoveNotation(move) {
     if (move.to.type == MoveType.ShortCastle)
         return "0-0";
     if (move.to.type == MoveType.LongCastle)
         return "0-0-0";
-    var p = pieceAt(move.to);
+    var p = pieceAt(move.from);
+    if (p == null)
+        return "ERROR: moved piece doesn't exist";
     var notation = "";
-    notation += pieceLetter[p.type];
+    if (p._customModel == undefined)
+        notation += pieceLetter[p.type];
+    else
+        notation += customModelLetter[p._customModel];
     notation += file[move.from.x];
     notation += rank[move.from.y];
     if (move.to.type == MoveType.Capture || move.to.type == MoveType.EnPassant)
         notation += "x";
     notation += file[move.to.x];
     notation += rank[move.to.y];
-    if (move.to.type == MoveType.Promotion)
-        notation += pieceLetter[promotionPiece];
+    if (move.to.promotion_to != undefined) {
+        notation += pieceLetter[move.to.promotion_to];
+        // notation.substring(1);
+    }
     return notation;
 }

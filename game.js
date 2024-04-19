@@ -9,6 +9,8 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var VARIANT_NORMAL = 0;
+var VARIANT_JURASSIC = 1;
 var Piece;
 (function (Piece) {
     Piece[Piece["Pawn"] = 1] = "Pawn";
@@ -17,16 +19,20 @@ var Piece;
     Piece[Piece["Rook"] = 4] = "Rook";
     Piece[Piece["Queen"] = 5] = "Queen";
     Piece[Piece["King"] = 6] = "King";
-    //JURASSIC CHESS:
     Piece[Piece["Pterodactyl"] = 7] = "Pterodactyl";
     Piece[Piece["Rex"] = 8] = "Rex";
     Piece[Piece["Triceratops"] = 9] = "Triceratops";
     Piece[Piece["Dragon"] = 10] = "Dragon";
 })(Piece || (Piece = {}));
+var CustomModel;
+(function (CustomModel) {
+    CustomModel[CustomModel["Veloceraptor"] = 0] = "Veloceraptor";
+    CustomModel[CustomModel["BeastHandler"] = 1] = "BeastHandler";
+})(CustomModel || (CustomModel = {}));
 var Color;
 (function (Color) {
-    Color[Color["Black"] = -1] = "Black";
-    Color[Color["White"] = 1] = "White";
+    Color[Color["White"] = 0] = "White";
+    Color[Color["Black"] = 1] = "Black";
 })(Color || (Color = {}));
 var MoveType;
 (function (MoveType) {
@@ -34,7 +40,6 @@ var MoveType;
     MoveType[MoveType["ShortCastle"] = 1] = "ShortCastle";
     MoveType[MoveType["LongCastle"] = 2] = "LongCastle";
     MoveType[MoveType["EnPassant"] = 3] = "EnPassant";
-    MoveType[MoveType["Promotion"] = 4] = "Promotion";
 })(MoveType || (MoveType = {}));
 var GameState;
 (function (GameState) {
@@ -59,6 +64,7 @@ var board = [];
 var selected = NONE;
 var turn = Color.White;
 var promotionPiece = Piece.Queen;
+var promotionCustomModel = undefined;
 var promoteCallback;
 var captureCallback;
 var pieces = []; //white pieces should be first
@@ -70,17 +76,12 @@ var gameState = GameState.None;
     init functions
 */
 //reset the game position
-function initBoard() {
+function initBoard(variant) {
     gameState = GameState.None;
     winner = null;
-    playersDrawAgreed = [];
     turn = Color.White;
     selected = NONE;
     board = [];
-    //NORMAL CHESS:
-    // promotionPiece = Piece.Queen;
-    //JURASSIC CHESS:
-    promotionPiece = Piece.Dragon;
     pieces = [];
     wking = NONE;
     bking = NONE;
@@ -90,10 +91,10 @@ function initBoard() {
             board[y].push(NONE);
         }
     }
-    //NORMAL CHESS:
-    // _standardBoard(pieces);
-    //JURASSIC CHESS:
-    _jurassicBoard(pieces);
+    if (variant == VARIANT_NORMAL)
+        _standardBoard(pieces);
+    else if (variant == VARIANT_JURASSIC)
+        _jurassicBoard(pieces);
     for (var i = 0; i < pieces.length; i++) {
         var p = pieces[i];
         board[p.y][p.x] = i;
@@ -106,12 +107,13 @@ function initBoard() {
     }
     gameState = GameState.Going;
 }
-function setCallbacks(promotionCallBack, captureCallBack) {
+function setCallbacksGame(promotionCallBack, captureCallBack) {
     promoteCallback = promotionCallBack;
     captureCallback = captureCallBack;
 }
 //NORMAL CHESS:
 function _standardBoard(pieces) {
+    promotionPiece = Piece.Queen;
     pieces.push({ type: Piece.Rook, color: Color.White, x: 0, y: 0 });
     pieces.push({ type: Piece.Knight, color: Color.White, x: 1, y: 0 });
     pieces.push({ type: Piece.Bishop, color: Color.White, x: 2, y: 0 });
@@ -144,42 +146,123 @@ function _standardBoard(pieces) {
     pieces.push({ type: Piece.Pawn, color: Color.Black, x: 5, y: 6 });
     pieces.push({ type: Piece.Pawn, color: Color.Black, x: 6, y: 6 });
     pieces.push({ type: Piece.Pawn, color: Color.Black, x: 7, y: 6 });
+    kingInCheck = function (color) {
+        var king = color == Color.White ? wking : bking;
+        var check = false;
+        var moves = _allStraight(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Rook || type == Piece.Queen)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allDiagonal(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Bishop || type == Piece.Queen)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allSet(king, KNIGHT_RELATIVE_MOVES);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Knight)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allPawn(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Pawn)
+                check = true;
+        });
+        if (check)
+            return true;
+        return false;
+    };
 }
-//JURASSIC CHESS:
 function _jurassicBoard(pieces) {
     promotionPiece = Piece.Dragon;
     pieces.push({ type: Piece.Triceratops, color: Color.White, x: 0, y: 0 });
-    pieces.push({ type: Piece.Pterodactyl, color: Color.White, x: 1, y: 0 });
-    pieces.push({ type: Piece.Rex, color: Color.White, x: 2, y: 0 });
+    pieces.push({ type: Piece.Rex, color: Color.White, x: 1, y: 0 });
+    pieces.push({ type: Piece.Pterodactyl, color: Color.White, x: 2, y: 0 });
     pieces.push({ type: Piece.Dragon, color: Color.White, x: 3, y: 0 });
-    pieces.push({ type: Piece.King, color: Color.White, x: 4, y: 0 });
-    pieces.push({ type: Piece.Rex, color: Color.White, x: 5, y: 0 });
-    pieces.push({ type: Piece.Pterodactyl, color: Color.White, x: 6, y: 0 });
+    pieces.push({ type: Piece.King, color: Color.White, x: 4, y: 0, _customModel: CustomModel.BeastHandler });
+    pieces.push({ type: Piece.Pterodactyl, color: Color.White, x: 5, y: 0 });
+    pieces.push({ type: Piece.Rex, color: Color.White, x: 6, y: 0 });
     pieces.push({ type: Piece.Triceratops, color: Color.White, x: 7, y: 0 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 0, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 1, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 2, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 3, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 4, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 5, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 6, y: 1 });
-    pieces.push({ type: Piece.Pawn, color: Color.White, x: 7, y: 1 });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 0, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 1, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 2, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 3, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 4, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 5, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 6, y: 1, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.White, x: 7, y: 1, _customModel: CustomModel.Veloceraptor });
     pieces.push({ type: Piece.Triceratops, color: Color.Black, x: 0, y: 7 });
-    pieces.push({ type: Piece.Pterodactyl, color: Color.Black, x: 1, y: 7 });
-    pieces.push({ type: Piece.Rex, color: Color.Black, x: 2, y: 7 });
+    pieces.push({ type: Piece.Rex, color: Color.Black, x: 1, y: 7 });
+    pieces.push({ type: Piece.Pterodactyl, color: Color.Black, x: 2, y: 7 });
     pieces.push({ type: Piece.Dragon, color: Color.Black, x: 3, y: 7 });
-    pieces.push({ type: Piece.King, color: Color.Black, x: 4, y: 7 });
-    pieces.push({ type: Piece.Rex, color: Color.Black, x: 5, y: 7 });
-    pieces.push({ type: Piece.Pterodactyl, color: Color.Black, x: 6, y: 7 });
+    pieces.push({ type: Piece.King, color: Color.Black, x: 4, y: 7, _customModel: CustomModel.BeastHandler });
+    pieces.push({ type: Piece.Pterodactyl, color: Color.Black, x: 5, y: 7 });
+    pieces.push({ type: Piece.Rex, color: Color.Black, x: 6, y: 7 });
     pieces.push({ type: Piece.Triceratops, color: Color.Black, x: 7, y: 7 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 0, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 1, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 2, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 3, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 4, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 5, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 6, y: 6 });
-    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 7, y: 6 });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 0, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 1, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 2, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 3, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 4, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 5, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 6, y: 6, _customModel: CustomModel.Veloceraptor });
+    pieces.push({ type: Piece.Pawn, color: Color.Black, x: 7, y: 6, _customModel: CustomModel.Veloceraptor });
+    kingInCheck = function (color) {
+        var king = color == Color.White ? wking : bking;
+        var check = false;
+        var moves = _allDragon(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Dragon)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allRex(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Rex)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allTriceratops(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Triceratops)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allPterodactyl(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Pterodactyl)
+                check = true;
+        });
+        if (check)
+            return true;
+        moves = _allPawn(king);
+        _forSquaresCaptures(moves, function (piece) {
+            var type = pieces[piece].type;
+            if (type == Piece.Pawn)
+                check = true;
+        });
+        if (check)
+            return true;
+        return false;
+    };
 }
 /*
     game progression functions
@@ -255,8 +338,9 @@ function _optionPromote(piece, to) {
     var p = pieces[piece];
     if (p == null)
         return;
-    if (to.type == MoveType.Promotion) {
-        p.type = promotionPiece;
+    if (to.promotion_to != undefined) {
+        p.type = to.promotion_to;
+        p._customModel = to.promotion_custom_model;
     }
     promoteCallback(piece);
 }
@@ -375,7 +459,6 @@ function allMoves() {
                 }
                 break;
             }
-            //JURASSIC CHESS:
             case Piece.Pterodactyl: {
                 var to = _allPterodactyl(id);
                 for (var i = 0; i < to.length; i++) {
@@ -524,12 +607,14 @@ function _allPawn(piece) {
         all.push({ x: p.x - 1, y: p.y + moveDirection, type: MoveType.Capture });
     //check promotion
     for (var i = 0; i < all.length; i++) {
-        if (all[i].y == promotionRank)
-            all[i].type = MoveType.Promotion;
+        if (all[i].y == promotionRank) {
+            all[i].promotion_to = promotionPiece;
+            if (promotionCustomModel)
+                all[i].promotion_custom_model = promotionCustomModel;
+        }
     }
     return all;
 }
-//JURASSIC CHESS:
 function _allPterodactyl(piece) {
     if (piece == NONE)
         return [];
@@ -709,77 +794,7 @@ function moveLegal(piece, to) {
 }
 //return true if a 'king' is in check
 //king cannot check another king in this version
-function kingInCheck(color) {
-    var king = color == Color.White ? wking : bking;
-    var check = false;
-    //NORMAL CHESS:
-    // let moves = _allStraight(king);
-    // _forSquaresCaptures(moves, (piece: number) => {
-    //     let type = pieces[piece]!.type;
-    //     if(type == Piece.Rook || type == Piece.Queen) check = true;
-    // });
-    // if(check) return true;
-    // moves = _allDiagonal(king);
-    // _forSquaresCaptures(moves, (piece: number) => {
-    //     let type = pieces[piece]!.type;
-    //     if(type == Piece.Bishop || type == Piece.Queen) check = true;
-    // });
-    // if(check) return true;
-    // moves = _allSet(king, KNIGHT_RELATIVE_MOVES);
-    // _forSquaresCaptures(moves, (piece: number) => {
-    //     let type = pieces[piece]!.type;
-    //     if(type == Piece.Knight) check = true;
-    // });
-    // if(check) return true;
-    // moves = _allPawn(king);
-    // _forSquaresCaptures(moves, (piece: number) => {
-    //     let type = pieces[piece]!.type;
-    //     if(type == Piece.Pawn) check = true;
-    // });
-    // if(check) return true;
-    //JURASSIC CHESS:
-    var moves = _allDragon(king);
-    _forSquaresCaptures(moves, function (piece) {
-        var type = pieces[piece].type;
-        if (type == Piece.Dragon)
-            check = true;
-    });
-    if (check)
-        return true;
-    moves = _allRex(king);
-    _forSquaresCaptures(moves, function (piece) {
-        var type = pieces[piece].type;
-        if (type == Piece.Rex)
-            check = true;
-    });
-    if (check)
-        return true;
-    moves = _allTriceratops(king);
-    _forSquaresCaptures(moves, function (piece) {
-        var type = pieces[piece].type;
-        if (type == Piece.Triceratops)
-            check = true;
-    });
-    if (check)
-        return true;
-    moves = _allPterodactyl(king);
-    _forSquaresCaptures(moves, function (piece) {
-        var type = pieces[piece].type;
-        if (type == Piece.Pterodactyl)
-            check = true;
-    });
-    if (check)
-        return true;
-    moves = _allPawn(king);
-    _forSquaresCaptures(moves, function (piece) {
-        var type = pieces[piece].type;
-        if (type == Piece.Pawn)
-            check = true;
-    });
-    if (check)
-        return true;
-    return false;
-}
+var kingInCheck;
 //should be called at the beginning of every move with input of all possible moves for current player
 function updateGameState(moves, agreedDraw) {
     if (agreedDraw) {
@@ -802,30 +817,34 @@ function updateGameState(moves, agreedDraw) {
         gameState = GameState.Stalemate;
         return true;
     }
-    //NORMALL CHESS:
     //check for not enough material
-    // let wmap = new Map<Piece, number>(); //where number is 0 or 1, depending on color of the square (for bishops)
-    // let bmap = new Map<Piece, number>();
-    // for(let i = 0; i < PIECES_PER_PLAYER; i++) {
-    //     let p = pieces[i];
-    //     if(p == null) continue;
-    //     wmap.set(p.type, (p.x+p.y)%2);
-    //     if(wmap.size > 2) return false;
-    // }
-    // for(let i = PIECES_PER_PLAYER; i < 2*PIECES_PER_PLAYER; i++) {
-    //     let p = pieces[i];
-    //     if(p == null) continue;
-    //     bmap.set(p.type, (p.x+p.y)%2);
-    // }
-    //K vs K, K vs K + N, K vs K + B, K + B vs K vs B where bishops are the same color
-    // if((wmap.size == 1 && bmap.size == 1) ||
-    // (wmap.size == 1 && bmap.size == 2 && (bmap.get(Piece.Bishop) != undefined || bmap.get(Piece.Knight) != undefined)) ||
-    // (wmap.size == 2 && bmap.size == 1 && (wmap.get(Piece.Bishop) != undefined || wmap.get(Piece.Knight) != undefined)) ||
-    // (wmap.size == 2 && bmap.size == 2 && (wmap.get(Piece.Bishop) != undefined && wmap.get(Piece.Bishop) == bmap.get(Piece.Bishop)))) {
-    //     winner = null;
-    //     gameState = GameState.InsufficientMaterial;
-    //     return true;
-    // }
+    if (VARIANT_CURRENT == VARIANT_NORMAL) {
+        var wmap = new Map(); //where number is 0 or 1, depending on color of the square (for bishops)
+        var bmap = new Map();
+        for (var i = 0; i < PIECES_PER_PLAYER; i++) {
+            var p = pieces[i];
+            if (p == null)
+                continue;
+            wmap.set(p.type, (p.x + p.y) % 2);
+            if (wmap.size > 2)
+                return false;
+        }
+        for (var i = PIECES_PER_PLAYER; i < 2 * PIECES_PER_PLAYER; i++) {
+            var p = pieces[i];
+            if (p == null)
+                continue;
+            bmap.set(p.type, (p.x + p.y) % 2);
+        }
+        // K vs K, K vs K + N, K vs K + B, K + B vs K vs B where bishops are the same color
+        if ((wmap.size == 1 && bmap.size == 1) ||
+            (wmap.size == 1 && bmap.size == 2 && (bmap.get(Piece.Bishop) != undefined || bmap.get(Piece.Knight) != undefined)) ||
+            (wmap.size == 2 && bmap.size == 1 && (wmap.get(Piece.Bishop) != undefined || wmap.get(Piece.Knight) != undefined)) ||
+            (wmap.size == 2 && bmap.size == 2 && (wmap.get(Piece.Bishop) != undefined && wmap.get(Piece.Bishop) == bmap.get(Piece.Bishop)))) {
+            winner = null;
+            gameState = GameState.InsufficientMaterial;
+            return true;
+        }
+    }
     return false;
 }
 /*
@@ -879,19 +898,19 @@ function _whatIfRevert() {
     }
     //moving the rook is irrelevant when looking for checks
     // if(_whatIfMove!.to.type == MoveType.LongCastle) {
-    //     //move the rook
-    //     let rookAt = {x: _whatIfPiece1!.x-1, y: _whatIfPiece1!.y};
-    //     let rookId = board[rookAt.y][rookAt.x];
-    //     pieces[rookId]!.x = 0;
-    //     board[rookAt.y][rookAt.x] = NONE;
-    //     board[rookAt.y][0] = rookId;
+    //	 //move the rook
+    //	 let rookAt = {x: _whatIfPiece1!.x-1, y: _whatIfPiece1!.y};
+    //	 let rookId = board[rookAt.y][rookAt.x];
+    //	 pieces[rookId]!.x = 0;
+    //	 board[rookAt.y][rookAt.x] = NONE;
+    //	 board[rookAt.y][0] = rookId;
     // } else if(_whatIfMove!.to.type == MoveType.ShortCastle) {
-    //     //move the rook
-    //     let rookAt = {x: _whatIfPiece1!.x+1, y: _whatIfPiece1!.y};
-    //     let rookId = board[rookAt.y][rookAt.x];
-    //     pieces[rookId]!.x = 7;
-    //     board[rookAt.y][rookAt.x] = NONE;
-    //     board[rookAt.y][7] = rookId;
+    //	 //move the rook
+    //	 let rookAt = {x: _whatIfPiece1!.x+1, y: _whatIfPiece1!.y};
+    //	 let rookId = board[rookAt.y][rookAt.x];
+    //	 pieces[rookId]!.x = 7;
+    //	 board[rookAt.y][rookAt.x] = NONE;
+    //	 board[rookAt.y][7] = rookId;
     // }
     _whatIfHappened = false;
 }
